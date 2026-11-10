@@ -55,68 +55,172 @@
             object-fit: contain;
         }
 
-        /* オーバーレイUI */
+        /* ロビー画面 UI (左右2カラムレイアウト) */
         .overlay {
             position: absolute;
             inset: 0;
-            background: rgba(8, 9, 13, 0.88);
+            background: rgba(8, 9, 13, 0.95);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 10;
             backdrop-filter: blur(8px);
+            padding: 20px;
         }
-        .panel {
-            background: rgba(255, 255, 255, 0.05);
+        .lobby-container {
+            display: flex;
+            width: 100%;
+            max-width: 800px;
+            height: 80%;
+            max-height: 420px;
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 24px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
         }
-        h1 {
-            font-size: 26px;
-            margin-bottom: 4px;
-            color: #ff3366;
-            text-shadow: 0 0 12px rgba(255,51,102,0.6);
+        
+        /* 左側：タイトルロゴ (縦読み dod) */
+        .lobby-left {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .title-vert {
+            font-size: 38px;
             font-weight: 900;
-            letter-spacing: 1px;
+            line-height: 1.25;
+            letter-spacing: 2px;
+        }
+        .highlight-red {
+            color: #ff3366;
+            text-shadow: 0 0 15px rgba(255, 51, 102, 0.8);
+            font-size: 46px;
         }
         .ver-tag {
-            font-size: 13px;
+            font-size: 14px;
             color: #888;
-            margin-bottom: 16px;
+            margin-top: 10px;
+            letter-spacing: 1px;
         }
+
+        /* 右側：名前入力・部屋接続・参加者リスト */
+        .lobby-right {
+            flex: 1.2;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow-y: auto;
+        }
+        .form-group {
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .form-group label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 4px;
+            display: block;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #1a1c24;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        input[type="number"] {
+            text-align: center;
+            letter-spacing: 6px;
+            font-size: 20px;
+        }
+
         .btn {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 11px;
+            margin: 6px 0;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             color: white;
-            background: linear-gradient(135deg, #4444ff, #2222aa);
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.2s;
         }
         .btn:active { transform: scale(0.98); }
         .btn-green { background: linear-gradient(135deg, #00c853, #008e3a); }
         .btn-orange { background: linear-gradient(135deg, #ff9100, #c77000); }
-        input[type="number"] {
-            width: 100%;
+        .btn-start { background: linear-gradient(135deg, #ff0055, #990033); font-size: 18px; margin-top: 10px; }
+
+        /* 参加者ルーム待機表示 */
+        #room-info-panel {
+            display: none;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             padding: 12px;
-            margin: 8px 0;
-            border-radius: 8px;
-            border: 1px solid #555;
-            background: #222;
-            color: #fff;
-            font-size: 20px;
+            margin-top: 10px;
+        }
+        .member-list {
+            margin: 10px 0;
+            text-align: left;
+        }
+        .member-item {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        .member-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        #status-msg {
+            font-size: 13px;
+            color: #aaa;
+            margin-top: 8px;
             text-align: center;
-            letter-spacing: 4px;
+        }
+
+        /* 3, 2, 1 スタート カウントダウンオーバーレイ */
+        #countdown-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+        }
+        #countdown-text {
+            font-size: 96px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 30px #ff0055, 0 0 60px #ff0055;
+            animation: popText 0.8s ease-out;
+        }
+        @keyframes popText {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         /* HUD */
@@ -140,7 +244,7 @@
         }
         .player-card.p1 { border-color: #ff4444; }
         .player-card.p2 { border-color: #4488ff; }
-        .p-name { font-size: 12px; font-weight: bold; }
+        .p-name { font-size: 13px; font-weight: bold; }
         .p-damage { font-size: 28px; font-weight: 900; }
         .shield-bar-bg {
             width: 100%;
@@ -206,10 +310,13 @@
         #btn-jump { right: 130px; bottom: 50px; background: rgba(50, 255, 50, 0.4); }
         #btn-shield { right: 65px; bottom: 125px; background: rgba(50, 150, 255, 0.4); }
 
-        #status-msg {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #aaa;
+        /* YouTube Background Audio Player */
+        #bgm-player {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -223,31 +330,82 @@
     <div id="game-container">
         <canvas id="canvas" width="960" height="540"></canvas>
 
+        <!-- YouTube BGM 埋め込み Iframe -->
+        <iframe id="bgm-player" src="" allow="autoplay"></iframe>
+
+        <!-- 3, 2, 1 カウントダウン演出 -->
+        <div id="countdown-overlay">
+            <div id="countdown-text">3</div>
+        </div>
+
+        <!-- HUD -->
         <div id="hud">
             <div class="player-card p1">
-                <div class="p-name" style="color:#ff4444;">1P (HOST)</div>
+                <div class="p-name" id="p1-display-name" style="color:#ff4444;">1P (HOST)</div>
                 <div class="p-damage" id="p1-damage">0%</div>
                 <div class="shield-bar-bg"><div class="shield-bar-fill" id="p1-shield-bar"></div></div>
             </div>
             <div class="player-card p2">
-                <div class="p-name" style="color:#4488ff;">2P (GUEST)</div>
+                <div class="p-name" id="p2-display-name" style="color:#4488ff;">2P (GUEST)</div>
                 <div class="p-damage" id="p2-damage">0%</div>
                 <div class="shield-bar-bg"><div class="shield-bar-fill" id="p2-shield-bar"></div></div>
             </div>
         </div>
 
+        <!-- ロビー画面 UI -->
         <div id="lobby" class="overlay">
-            <div class="panel">
-                <h1>dance of dance</h1>
-                <div class="ver-tag">dod ver0.0</div>
-                <button class="btn btn-green" id="btn-create">部屋を作る (HOST)</button>
-                <div style="margin: 15px 0; border-top: 1px solid #444;"></div>
-                <input type="number" id="room-input" placeholder="3桁の部屋番号" maxlength="3" pattern="\d*">
-                <button class="btn btn-orange" id="btn-join">部屋に入る (GUEST)</button>
-                <div id="status-msg">オンライン対戦を選択してください</div>
+            <div class="lobby-container">
+                <!-- 左側：縦読み dod ロゴ -->
+                <div class="lobby-left">
+                    <div class="title-vert">
+                        <span class="highlight-red">d</span>ance<br>
+                        <span class="highlight-red">o</span>f<br>
+                        <span class="highlight-red">d</span>ance
+                    </div>
+                    <div class="ver-tag">dod ver0.0</div>
+                </div>
+
+                <!-- 右側：接続＆参加者一覧 -->
+                <div class="lobby-right">
+                    <div class="form-group">
+                        <label>プレイヤー名</label>
+                        <input type="text" id="player-name-input" placeholder="名前を入力" value="Player1" maxlength="10">
+                    </div>
+
+                    <!-- 初期接続ボタンフォーム -->
+                    <div id="connection-controls">
+                        <button class="btn btn-green" id="btn-create">部屋を作る (HOST)</button>
+                        <div style="margin: 10px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
+                        <div class="form-group" style="margin-bottom: 6px;">
+                            <label>部屋番号を入力</label>
+                            <input type="number" id="room-input" placeholder="3桁の数字" maxlength="3" pattern="\d*">
+                        </div>
+                        <button class="btn btn-orange" id="btn-join">部屋に入る (GUEST)</button>
+                    </div>
+
+                    <!-- 参加者リスト & 対戦開始ボタン（部屋接続後に表示） -->
+                    <div id="room-info-panel">
+                        <div style="font-size: 12px; color: #aaa;">部屋番号: <span id="display-room-code" style="color:#00ff00; font-size:16px; font-weight:bold;">---</span></div>
+                        <div class="member-list">
+                            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">参加プレイヤー:</div>
+                            <div class="member-item">
+                                <div class="member-dot" style="background:#ff4444;"></div>
+                                <span id="p1-member-name">1P: 待機中...</span>
+                            </div>
+                            <div class="member-item">
+                                <div class="member-dot" style="background:#4488ff;"></div>
+                                <span id="p2-member-name">2P: 待機中...</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-start" id="btn-start-game" style="display:none;">対戦スタート！</button>
+                    </div>
+
+                    <div id="status-msg">プレイヤー名を入力して部屋を作成/参加してください</div>
+                </div>
             </div>
         </div>
 
+        <!-- タッチコントローラー -->
         <div id="touch-controls">
             <div class="touch-group">
                 <div class="dpad-btn" id="btn-left"></div>
@@ -336,7 +494,27 @@
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
                 osc.start(now);
                 osc.stop(now + 0.5);
+            } else if (type === 'beep') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'go') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(880, now);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
             }
+        }
+
+        // --- YouTube BGM 再生関数 ---
+        function startBGM() {
+            const player = document.getElementById('bgm-player');
+            player.src = "https://www.youtube.com/embed/ddFxebt4VTU?autoplay=1&loop=1&playlist=ddFxebt4VTU&enablejsapi=1";
         }
 
         // --- 基本設定 & キャンバス ---
@@ -346,21 +524,75 @@
 
         let peer = null, conn = null;
         let isHost = false, myPlayerId = 1, gameRunning = false;
+        let p1Name = "1P", p2Name = "2P";
 
         const keys = { 
             left: false, right: false, down: false, jump: false, shield: false,
-            atkDir: null, specDir: null // N, U, D, L
+            atkDir: null, specDir: null
         };
 
         const GRAVITY = 0.45;
         const FRICTION = 0.85;
 
+        // パーティクル（攻撃演出：炎・斬撃など）
+        class Particle {
+            constructor(x, y, vx, vy, color, size, life) {
+                this.x = x; this.y = y;
+                this.vx = vx; this.vy = vy;
+                this.color = color;
+                this.size = size;
+                this.life = life;
+                this.maxLife = life;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.size *= 0.94;
+                this.life--;
+            }
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(0, this.size), 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        let particles = [];
+
+        function spawnEffect(x, y, type, facing) {
+            if (type === 'fire') {
+                for (let i = 0; i < 12; i++) {
+                    const angle = (Math.random() - 0.5) * 1.2;
+                    const speed = Math.random() * 8 + 3;
+                    const vx = Math.cos(angle) * speed * facing;
+                    const vy = Math.sin(angle) * speed - 2;
+                    const colors = ['#ffcc00', '#ff6600', '#ff0033'];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    particles.push(new Particle(x, y, vx, vy, color, Math.random() * 10 + 6, 20));
+                }
+            } else if (type === 'slash') {
+                for (let i = 0; i < 10; i++) {
+                    const vx = facing * (Math.random() * 6 + 4);
+                    const vy = (Math.random() - 0.5) * 6;
+                    particles.push(new Particle(x, y, vx, vy, '#00ffff', Math.random() * 6 + 4, 15));
+                }
+            } else if (type === 'burst') {
+                for (let i = 0; i < 16; i++) {
+                    const a = Math.random() * Math.PI * 2;
+                    const s = Math.random() * 7 + 2;
+                    particles.push(new Particle(x, y, Math.cos(a)*s, Math.sin(a)*s, '#ff0055', Math.random() * 8 + 4, 25));
+                }
+            }
+        }
+
         // 弾丸クラス
         class Projectile {
             constructor(x, y, vx, ownerId) {
-                this.x = x;
-                this.y = y;
-                this.vx = vx;
+                this.x = x; this.y = y; this.vx = vx;
                 this.ownerId = ownerId;
                 this.radius = 12;
                 this.active = true;
@@ -370,6 +602,9 @@
                 this.x += this.vx;
                 this.life--;
                 if (this.life <= 0 || this.x < 0 || this.x > canvas.width) this.active = false;
+                if (Math.random() < 0.6) {
+                    particles.push(new Particle(this.x, this.y, -this.vx * 0.2, (Math.random()-0.5)*2, '#ffaa00', 6, 12));
+                }
             }
             draw() {
                 ctx.save();
@@ -377,7 +612,7 @@
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.ownerId === 1 ? '#ff8844' : '#44ccff';
                 ctx.shadowColor = ctx.fillStyle;
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 12;
                 ctx.fill();
                 ctx.restore();
             }
@@ -409,41 +644,39 @@
                 this.isShieldBroken = false;
                 this.dizzyTimer = 0;
                 this.attackTimer = 0;
-                this.currentMotion = 'idle'; // idle, jab, smash, somersault, lowkick, fireball, dashpunch, rising, slam, hit, dizzy
+                this.currentMotion = 'idle';
                 this.hitbox = null;
                 this.hitStun = 0;
                 this.jumpsLeft = 2;
             }
 
             update() {
-                // ガードクラッシュ気絶処理
                 if (this.isShieldBroken) {
                     this.dizzyTimer--;
                     this.currentMotion = 'dizzy';
                     this.shield = false;
                     if (this.dizzyTimer <= 0) {
                         this.isShieldBroken = false;
-                        this.shieldHP = 50; // 復帰時半分回復
+                        this.shieldHP = 50;
                     }
                 } else {
-                    // シールド管理
                     if (this.shield && this.isGrounded) {
                         this.vx *= 0.5;
-                        this.shieldHP -= 0.6; // 一定時間で減少
+                        this.shieldHP -= 0.6;
                         if (this.shieldHP <= 0) {
                             this.shieldHP = 0;
                             this.isShieldBroken = true;
-                            this.dizzyTimer = 180; // 3秒間気絶
+                            this.dizzyTimer = 180;
                             this.shield = false;
                             this.hitbox = null;
                             playSound('break');
+                            spawnEffect(this.x + this.width/2, this.y + this.height/2, 'burst', this.facing);
                         }
                     } else if (this.shieldHP < 100) {
-                        this.shieldHP += 0.25; // 自然回復
+                        this.shieldHP += 0.25;
                     }
                 }
 
-                // 被弾硬直
                 if (this.hitStun > 0) {
                     this.hitStun--;
                     this.currentMotion = 'hit';
@@ -464,7 +697,6 @@
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // 接地判定
                 this.isGrounded = false;
                 if (this.x + this.width > STAGE.x && this.x < STAGE.x + STAGE.width) {
                     if (this.y + this.height >= STAGE.y && this.y + this.height <= STAGE.y + STAGE.height && this.vy >= 0) {
@@ -475,9 +707,9 @@
                     }
                 }
 
-                // 画面外バースト
                 if (this.x < -120 || this.x > canvas.width + 120 || this.y < -120 || this.y > canvas.height + 120) {
                     playSound('ko');
+                    spawnEffect(canvas.width/2, canvas.height/2, 'burst', 1);
                     this.reset();
                 }
             }
@@ -506,27 +738,32 @@
             executeAttack(dir) {
                 if (this.hitStun > 0 || this.attackTimer > 0 || this.shield || this.isShieldBroken) return;
                 
-                if (dir === 'N') { // Tap: ジャブ
+                const px = this.facing === 1 ? this.x + this.width : this.x;
+                if (dir === 'N') {
                     this.currentMotion = 'jab';
                     this.attackTimer = 10;
                     this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 24, y: this.y + 15, w: 24, h: 20, damage: 5, baseKnockback: 4, scaling: 0.08, dir: this.facing };
                     playSound('hit');
-                } else if (dir === 'L') { // 横フリック: スマッシュ
+                    spawnEffect(px, this.y + 20, 'slash', this.facing);
+                } else if (dir === 'L') {
                     this.currentMotion = 'smash';
                     this.attackTimer = 18;
                     this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 38, y: this.y + 10, w: 38, h: 28, damage: 14, baseKnockback: 9, scaling: 0.18, dir: this.facing };
                     playSound('heavy_hit');
-                } else if (dir === 'U') { // 上フリック: サマーソルト
+                    spawnEffect(px, this.y + 20, 'fire', this.facing);
+                } else if (dir === 'U') {
                     this.currentMotion = 'somersault';
                     this.attackTimer = 16;
                     this.vy = -4;
                     this.hitbox = { x: this.x - 5, y: this.y - 25, w: this.width + 10, h: 30, damage: 11, baseKnockback: 8, scaling: 0.15, dir: this.facing, vy: -8 };
                     playSound('heavy_hit');
-                } else if (dir === 'D') { // 下フリック: ローキック
+                    spawnEffect(this.x + this.width/2, this.y, 'fire', this.facing);
+                } else if (dir === 'D') {
                     this.currentMotion = 'lowkick';
                     this.attackTimer = 12;
                     this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 30, y: this.y + 35, w: 30, h: 18, damage: 8, baseKnockback: 5, scaling: 0.1, dir: this.facing };
                     playSound('hit');
+                    spawnEffect(px, this.y + 40, 'slash', this.facing);
                 }
             }
 
@@ -534,39 +771,44 @@
             executeSpecial(dir) {
                 if (this.hitStun > 0 || this.attackTimer > 0 || this.shield || this.isShieldBroken) return;
 
-                if (dir === 'N') { // Tap: 気功波
+                const px = this.facing === 1 ? this.x + this.width : this.x;
+                if (dir === 'N') {
                     this.currentMotion = 'fireball';
                     this.attackTimer = 18;
                     const spawnX = this.facing === 1 ? this.x + this.width + 10 : this.x - 10;
                     projectiles.push(new Projectile(spawnX, this.y + 20, this.facing * 8, this.id));
                     playSound('projectile');
-                } else if (dir === 'L') { // 横フリック: 突進パンチ
+                } else if (dir === 'L') {
                     this.currentMotion = 'dashpunch';
                     this.attackTimer = 20;
                     this.vx = this.facing * 9;
                     this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 35, y: this.y + 5, w: 35, h: 35, damage: 13, baseKnockback: 8, scaling: 0.16, dir: this.facing };
                     playSound('heavy_hit');
-                } else if (dir === 'U') { // 上フリック: ライジングドラゴン (復帰技)
+                    spawnEffect(px, this.y + 20, 'fire', this.facing);
+                } else if (dir === 'U') {
                     this.currentMotion = 'rising';
                     this.attackTimer = 22;
                     this.vy = -12.5;
                     this.vx = this.facing * 3.5;
                     this.hitbox = { x: this.x - 10, y: this.y - 15, w: this.width + 20, h: 30, damage: 12, baseKnockback: 9, scaling: 0.15, dir: this.facing, vy: -6 };
                     playSound('heavy_hit');
-                } else if (dir === 'D') { // 下フリック: 衝撃波 slam
+                    spawnEffect(this.x + this.width/2, this.y + 10, 'fire', this.facing);
+                } else if (dir === 'D') {
                     this.currentMotion = 'slam';
                     this.attackTimer = 20;
-                    if (!this.isGrounded) this.vy = 12; // 急降下
+                    if (!this.isGrounded) this.vy = 12;
                     this.hitbox = { x: this.x - 20, y: this.y + 20, w: this.width + 40, h: 30, damage: 10, baseKnockback: 7, scaling: 0.12, dir: this.facing };
                     playSound('heavy_hit');
+                    spawnEffect(this.x + this.width/2, this.y + this.height, 'burst', this.facing);
                 }
             }
 
             applyHit(hitbox) {
                 if (this.shield && this.isGrounded && !this.isShieldBroken) {
-                    this.shieldHP -= hitbox.damage * 2.5; // ガード削り
+                    this.shieldHP -= hitbox.damage * 2.5;
                     this.vx = hitbox.dir * 3;
                     playSound('shield');
+                    spawnEffect(this.x + this.width/2, this.y + this.height/2, 'slash', this.facing);
                     if (this.shieldHP <= 0) {
                         this.shieldHP = 0;
                         this.isShieldBroken = true;
@@ -582,6 +824,7 @@
                 this.vy = hitbox.vy ? hitbox.vy : -totalKnockback * 0.55;
                 this.hitStun = Math.floor(totalKnockback * 1.4);
                 this.currentMotion = 'hit';
+                spawnEffect(this.x + this.width/2, this.y + this.height/2, 'burst', hitbox.dir);
             }
 
             draw() {
@@ -595,21 +838,28 @@
                 ctx.lineWidth = 4;
                 ctx.lineCap = 'round';
 
-                // --- ポーズアニメーション描画 (棒人間) ---
                 const centerX = 0, centerY = -5;
                 
-                // 頭部
+                // --- 顔・頭部の描画（明確な目線と方向） ---
                 ctx.beginPath();
-                ctx.arc(centerX, centerY - 18, 8, 0, Math.PI * 2);
+                ctx.arc(centerX, centerY - 18, 9, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 顔の目（向いている右側に向ける）
+                ctx.fillStyle = '#08090d';
+                ctx.beginPath();
+                ctx.arc(centerX + 4, centerY - 20, 2.5, 0, Math.PI * 2); // 右目
+                ctx.arc(centerX + 7, centerY - 18, 1.8, 0, Math.PI * 2); // ほっぺ/横顔ライン
                 ctx.fill();
 
                 // 胴体
+                ctx.strokeStyle = c;
                 ctx.beginPath();
-                ctx.moveTo(centerX, centerY - 10);
+                ctx.moveTo(centerX, centerY - 9);
                 ctx.lineTo(centerX, centerY + 10);
                 ctx.stroke();
 
-                // 手足座標の設定
+                // 手足ポーズ座標
                 let lh = {x: -10, y: 5}, rh = {x: 10, y: 5};
                 let lf = {x: -8, y: 25}, rf = {x: 8, y: 25};
 
@@ -634,8 +884,8 @@
 
                 // 腕描画
                 ctx.beginPath();
-                ctx.moveTo(centerX, centerY - 8); ctx.lineTo(lh.x, lh.y);
-                ctx.moveTo(centerX, centerY - 8); ctx.lineTo(rh.x, rh.y);
+                ctx.moveTo(centerX, centerY - 7); ctx.lineTo(lh.x, lh.y);
+                ctx.moveTo(centerX, centerY - 7); ctx.lineTo(rh.x, rh.y);
                 ctx.stroke();
 
                 // 脚描画
@@ -646,7 +896,7 @@
 
                 ctx.restore();
 
-                // --- 気絶ピヨり演出 (星) ---
+                // --- 気絶ピヨり演出 ---
                 if (this.isShieldBroken) {
                     ctx.save();
                     const angle = Date.now() * 0.01;
@@ -674,39 +924,45 @@
                     ctx.stroke();
                     ctx.restore();
                 }
-
-                // --- ヒットボックスデバッグ表示 ---
-                if (this.hitbox) {
-                    ctx.save();
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
-                    ctx.fillRect(this.hitbox.x, this.hitbox.y, this.hitbox.w, this.hitbox.h);
-                    ctx.restore();
-                }
             }
         }
 
         const p1 = new Player(1, 280, '#ff4444');
         const p2 = new Player(2, 640, '#4488ff');
 
-        // --- PeerJS オンライン通信 ---
+        // --- PeerJS オンライン通信 & ルーム管理 ---
         const statusMsg = document.getElementById('status-msg');
 
         function generate3DigitCode() {
             return Math.floor(100 + Math.random() * 900).toString();
         }
 
+        function updateRoomUI() {
+            document.getElementById('connection-controls').style.display = 'none';
+            document.getElementById('room-info-panel').style.display = 'block';
+            document.getElementById('p1-member-name').innerText = `1P (HOST): ${p1Name}`;
+            document.getElementById('p2-member-name').innerText = `2P (GUEST): ${p2Name}`;
+
+            if (isHost && conn && conn.open) {
+                document.getElementById('btn-start-game').style.display = 'block';
+            }
+        }
+
         document.getElementById('btn-create').addEventListener('click', () => {
             initAudio();
+            p1Name = document.getElementById('player-name-input').value || "Host";
             const roomCode = generate3DigitCode();
             const peerId = 'dod-room-' + roomCode;
 
+            document.getElementById('display-room-code').innerText = roomCode;
             statusMsg.innerText = '部屋を作成中...';
             peer = new Peer(peerId);
 
             peer.on('open', () => {
                 isHost = true;
                 myPlayerId = 1;
-                statusMsg.innerHTML = `<b style="color:#00ff00; font-size:18px;">部屋番号: ${roomCode}</b><br>参加者を待っています...`;
+                statusMsg.innerText = '参加者を待っています...';
+                updateRoomUI();
             });
 
             peer.on('connection', (c) => {
@@ -721,12 +977,14 @@
 
         document.getElementById('btn-join').addEventListener('click', () => {
             initAudio();
+            p2Name = document.getElementById('player-name-input').value || "Guest";
             const roomCode = document.getElementById('room-input').value;
             if (roomCode.length !== 3) {
                 alert('3桁の部屋番号を入力してください');
                 return;
             }
 
+            document.getElementById('display-room-code').innerText = roomCode;
             const peerId = 'dod-room-' + roomCode;
             statusMsg.innerText = '部屋に接続中...';
             peer = new Peer();
@@ -745,13 +1003,27 @@
 
         function setupConnection() {
             conn.on('open', () => {
-                document.getElementById('lobby').style.display = 'none';
-                gameRunning = true;
-                requestAnimationFrame(gameLoop);
+                statusMsg.innerText = '接続完了！';
+                // 名前の相互交換
+                if (isHost) {
+                    conn.send({ type: 'init_names', p1Name: p1Name });
+                } else {
+                    conn.send({ type: 'guest_name', p2Name: p2Name });
+                }
+                updateRoomUI();
             });
 
             conn.on('data', (data) => {
-                if (isHost) {
+                if (data.type === 'init_names') {
+                    p1Name = data.p1Name;
+                    updateRoomUI();
+                } else if (data.type === 'guest_name') {
+                    p2Name = data.p2Name;
+                    updateRoomUI();
+                    if (isHost) conn.send({ type: 'init_names', p1Name: p1Name });
+                } else if (data.type === 'start_countdown') {
+                    startCountdownSequence();
+                } else if (isHost) {
                     applyInput(p2, data.keys);
                 } else {
                     p1.x = data.p1.x; p1.y = data.p1.y; p1.facing = data.p1.facing;
@@ -762,7 +1034,6 @@
                     p2.damage = data.p2.damage; p2.shield = data.p2.shield; p2.shieldHP = data.p2.shieldHP;
                     p2.isShieldBroken = data.p2.isShieldBroken; p2.currentMotion = data.p2.currentMotion; p2.hitbox = data.p2.hitbox;
 
-                    // 弾丸同期
                     projectiles = data.projectiles.map(p => {
                         let proj = new Projectile(p.x, p.y, p.vx, p.ownerId);
                         proj.radius = p.radius;
@@ -770,6 +1041,52 @@
                     });
                 }
             });
+        }
+
+        // ホストの対戦開始ボタンクリック
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            if (conn && conn.open) {
+                conn.send({ type: 'start_countdown' });
+                startCountdownSequence();
+            }
+        });
+
+        // --- 3, 2, 1 スタート演出 ---
+        function startCountdownSequence() {
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('p1-display-name').innerText = p1Name;
+            document.getElementById('p2-display-name').innerText = p2Name;
+
+            const countdownOverlay = document.getElementById('countdown-overlay');
+            const countdownText = document.getElementById('countdown-text');
+            countdownOverlay.style.display = 'flex';
+
+            let count = 3;
+            countdownText.innerText = count;
+            playSound('beep');
+
+            const timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownText.innerText = count;
+                    countdownText.style.animation = 'none';
+                    void countdownText.offsetWidth; // リフロー発生
+                    countdownText.style.animation = 'popText 0.8s ease-out';
+                    playSound('beep');
+                } else if (count === 0) {
+                    countdownText.innerText = "START!";
+                    countdownText.style.animation = 'none';
+                    void countdownText.offsetWidth;
+                    countdownText.style.animation = 'popText 0.8s ease-out';
+                    playSound('go');
+                    startBGM(); // バックグラウンドBGM再生開始
+                } else {
+                    clearInterval(timer);
+                    countdownOverlay.style.display = 'none';
+                    gameRunning = true;
+                    requestAnimationFrame(gameLoop);
+                }
+            }, 1000);
         }
 
         function applyInput(player, inputKeys) {
@@ -782,7 +1099,7 @@
             player.shield = inputKeys.shield;
         }
 
-        // --- フリック・キーボード操作判定 ---
+        // --- フリック・キーボード操作 ---
         let jumpPressed = false;
 
         function checkTriggers() {
@@ -790,7 +1107,6 @@
             jumpPressed = keys.jump;
         }
 
-        // キーボード操作
         window.addEventListener('keydown', (e) => {
             initAudio();
             if (e.repeat) return;
@@ -800,7 +1116,6 @@
             if (e.key === 'w' || e.key === 'ArrowUp' || e.key === ' ') keys.jump = true;
             if (e.key === 'l' || e.key === 'c') keys.shield = true;
 
-            // キーボード技分岐 (WASD/矢印+ J/K)
             if (e.key === 'j' || e.key === 'z') {
                 if (keys.left || keys.right) keys.atkDir = 'L';
                 else if (keys.jump) keys.atkDir = 'U';
@@ -823,7 +1138,6 @@
             if (e.key === 'l' || e.key === 'c') keys.shield = false;
         });
 
-        // ボタンのフリック判定セットアップ
         function setupFlickBtn(elementId, actionType) {
             const btn = document.getElementById(elementId);
             let startX = 0, startY = 0;
@@ -844,11 +1158,11 @@
                 const dist = Math.hypot(dx, dy);
 
                 let dir = 'N';
-                if (dist > 20) { // 20px以上移動でフリック認定
+                if (dist > 20) {
                     if (Math.abs(dx) > Math.abs(dy)) {
-                        dir = 'L'; // 左右フリック
+                        dir = 'L';
                     } else {
-                        dir = dy < 0 ? 'U' : 'D'; // 上・下フリック
+                        dir = dy < 0 ? 'U' : 'D';
                     }
                 }
 
@@ -873,18 +1187,15 @@
 
         // --- 当たり判定 ---
         function checkHitboxes() {
-            // 近接攻撃 P1 -> P2
             if (p1.hitbox && isColliding(p1.hitbox, p2)) {
                 p2.applyHit(p1.hitbox);
                 p1.hitbox = null;
             }
-            // 近接攻撃 P2 -> P1
             if (p2.hitbox && isColliding(p2.hitbox, p1)) {
                 p1.applyHit(p2.hitbox);
                 p2.hitbox = null;
             }
 
-            // 弾丸の当たり判定
             projectiles.forEach(p => {
                 if (!p.active) return;
                 const target = p.ownerId === 1 ? p2 : p1;
@@ -903,26 +1214,22 @@
                    rect.y + rect.h > player.y;
         }
 
-        // --- ループ ---
+        // --- ゲームメインループ ---
         function gameLoop() {
             if (!gameRunning) return;
 
             checkTriggers();
 
             if (isHost) {
-                const activePlayer = myPlayerId === 1 ? p1 : p2;
-                applyInput(p1, myPlayerId === 1 ? keys : keys); // ホスト入力適応
-                
+                applyInput(p1, keys);
                 p1.update();
                 p2.update();
 
-                // 弾丸更新
                 projectiles.forEach(p => p.update());
                 projectiles = projectiles.filter(p => p.active);
 
                 checkHitboxes();
 
-                // 入力フラグのリセット
                 keys.atkDir = null;
                 keys.specDir = null;
 
@@ -941,21 +1248,26 @@
                 keys.specDir = null;
             }
 
+            // パーティクル更新
+            particles.forEach(p => p.update());
+            particles = particles.filter(p => p.life > 0);
+
             // 描画
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // ステージ
+            // ステージ描画
             ctx.fillStyle = '#222735';
             ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, STAGE.height);
             ctx.fillStyle = '#ff3366';
             ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, 4);
 
-            // キャラ & 弾丸描画
+            // オブジェクト描画
+            particles.forEach(p => p.draw());
             projectiles.forEach(p => p.draw());
             p1.draw();
             p2.draw();
 
-            // HUD更新
+            // HUD数値更新
             document.getElementById('p1-damage').innerText = `${Math.floor(p1.damage)}%`;
             document.getElementById('p2-damage').innerText = `${Math.floor(p2.damage)}%`;
             document.getElementById('p1-shield-bar').style.width = `${p1.shieldHP}%`;
