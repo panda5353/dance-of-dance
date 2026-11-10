@@ -1,1054 +1,652 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>犯人は踊る ver 1.5 - オンライン対戦</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap');
-    
-    body {
-      font-family: 'M PLUS Rounded 1c', sans-serif;
-      background-color: #0d261e;
-      background-image: radial-gradient(#154738 2px, transparent 2px);
-      background-size: 24px 24px;
-      color: #ffffff;
-      touch-action: manipulation;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>スマブラ風 2D Online Fighter</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0d0e15;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #fff;
+        }
 
-    .pop-shadow {
-      box-shadow: 0 8px 0 #0f172a, 0 15px 25px rgba(0, 0, 0, 0.4);
-    }
-    
-    .pop-button {
-      box-shadow: 0 6px 0 #b91c1c;
-      transition: all 0.1s ease;
-    }
-    .pop-button:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #b91c1c;
-    }
+        /* 横画面強制アナウンス */
+        #portrait-warning {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #111;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        @media (orientation: portrait) {
+            #portrait-warning { display: flex; }
+        }
 
-    .felt-table {
-      background: radial-gradient(circle, #1f6b54 0%, #0c3629 100%);
-      border: 14px solid #78350f;
-      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.7), 0 20px 40px rgba(0, 0, 0, 0.6);
-    }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .card-real {
-      box-shadow: 0 8px 16px rgba(0,0,0,0.4), inset 0 2px 3px rgba(255,255,255,0.8);
-      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .card-real:hover {
-      transform: translateY(-16px) scale(1.05);
-      z-index: 30;
-    }
+        canvas {
+            background: radial-gradient(circle at center, #1e2638 0%, #0d0e15 100%);
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
 
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #f59e0b;
-      border-radius: 4px;
-    }
+        /* ロビー・メニューUI */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 12, 20, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+        .panel {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #ff3366;
+            text-shadow: 0 0 10px rgba(255,51,102,0.5);
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #4444ff, #2222aa);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-green { background: linear-gradient(135deg, #00c853, #008e3a); }
+        .btn-orange { background: linear-gradient(135deg, #ff9100, #c77000); }
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #555;
+            background: #222;
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 4px;
+        }
 
-    @keyframes popIn {
-      0% { transform: scale(0.5) translateY(20px); opacity: 0; }
-      100% { transform: scale(1) translateY(0); opacity: 1; }
-    }
-    .animate-pop-card {
-      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-  </style>
+        /* ゲーム内HUD */
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .player-card {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 2px solid #555;
+            text-align: center;
+            min-width: 130px;
+        }
+        .player-card.p1 { border-color: #ff4444; }
+        .player-card.p2 { border-color: #4488ff; }
+        .p-name { font-size: 12px; font-weight: bold; }
+        .p-damage { font-size: 28px; font-weight: 900; }
+
+        /* タッチコントローラー */
+        #touch-controls {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 6;
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .touch-group {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            pointer-events: auto;
+        }
+        /* 左操作 (D-Pad) */
+        .dpad-btn {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        .dpad-btn:active { background: rgba(255, 255, 255, 0.4); }
+        #btn-left { left: 0; top: 60px; width: 60px; height: 60px; }
+        #btn-right { right: 0; top: 60px; width: 60px; height: 60px; }
+        #btn-down { left: 60px; bottom: 0; width: 60px; height: 60px; }
+
+        /* 右操作 (Action Buttons) */
+        .act-btn {
+            position: absolute;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .act-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.5); }
+        #btn-atk { right: 70px; bottom: 10px; background: rgba(255, 50, 50, 0.4); }
+        #btn-spec { right: 10px; bottom: 70px; background: rgba(255, 170, 0, 0.4); }
+        #btn-jump { right: 130px; bottom: 50px; background: rgba(50, 255, 50, 0.4); }
+        #btn-shield { right: 60px; bottom: 120px; background: rgba(50, 150, 255, 0.4); }
+
+        #status-msg {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #aaa;
+        }
+    </style>
 </head>
-<body class="min-h-screen select-none">
-  <div id="root"></div>
-
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
-
-    // --- Web Audio API によるサウンドシステム ---
-    let audioCtx = null;
-    let bgmInterval = null;
-
-    const getAudioContext = () => {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
-    };
-
-    const playTone = (freq, duration, type = 'sine', gainVal = 0.1) => {
-      try {
-        const ctx = getAudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + duration);
-      } catch (e) {}
-    };
-
-    const SOUNDS = {
-      playCard: () => {
-        playTone(440, 0.1, 'triangle', 0.15);
-        setTimeout(() => playTone(880, 0.15, 'sine', 0.15), 50);
-      },
-      swapCard: () => {
-        playTone(300, 0.08, 'sawtooth', 0.1);
-        setTimeout(() => playTone(600, 0.08, 'sawtooth', 0.1), 80);
-        setTimeout(() => playTone(450, 0.12, 'sine', 0.1), 160);
-      },
-      win: () => {
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, idx) => {
-          setTimeout(() => playTone(freq, 0.3, 'triangle', 0.2), idx * 120);
-        });
-      },
-      detective: () => {
-        playTone(200, 0.2, 'sawtooth', 0.2);
-        setTimeout(() => playTone(150, 0.3, 'sawtooth', 0.2), 150);
-      }
-    };
-
-    const startBGM = () => {
-      if (bgmInterval) return;
-      const notes = [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23];
-      let step = 0;
-      bgmInterval = setInterval(() => {
-        playTone(notes[step % notes.length], 0.2, 'sine', 0.03);
-        step++;
-      }, 400);
-    };
-
-    const stopBGM = () => {
-      if (bgmInterval) {
-        clearInterval(bgmInterval);
-        bgmInterval = null;
-      }
-    };
-
-    const CARD_TYPES = {
-      FIRST_DISCOVERER: { 
-        id: 'first_discoverer', name: '第一発見者', bg: 'bg-gradient-to-b from-amber-300 to-amber-500', 
-        border: 'border-amber-700', text: 'text-amber-950', icon: 'fa-magnifying-glass', 
-        tag: '事件発生', desc: '手札にある人が最初に場に出します。' 
-      },
-      CRIMINAL: { 
-        id: 'criminal', name: '犯人', bg: 'bg-gradient-to-b from-rose-500 to-rose-700', 
-        border: 'border-rose-950', text: 'text-white', icon: 'fa-user-ninja', 
-        tag: '勝利カード', desc: '最後まで手札に持ち、最後の1枚として出すと勝利！' 
-      },
-      DETECTIVE: { 
-        id: 'detective', name: '探偵', bg: 'bg-gradient-to-b from-sky-300 to-sky-500', 
-        border: 'border-sky-700', text: 'text-sky-950', icon: 'fa-user-tie', 
-        tag: '告発', desc: '1人を指名。「犯人ですか？」と問い詰め、当てれば勝利！' 
-      },
-      ALIBI: { 
-        id: 'alibi', name: 'アリバイ', bg: 'bg-gradient-to-b from-emerald-300 to-emerald-500', 
-        border: 'border-emerald-700', text: 'text-emerald-950', icon: 'fa-shield-halved', 
-        tag: '防御', desc: '犯人カードを持っていても「犯人ではありません」と言える。' 
-      },
-      SCHEME: { 
-        id: 'scheme', name: 'たくらみ', bg: 'bg-gradient-to-b from-purple-400 to-purple-600', 
-        border: 'border-purple-900', text: 'text-white', icon: 'fa-masks-theater', 
-        tag: '共犯者', desc: '犯人が勝利したとき、自分も一緒に勝利！' 
-      },
-      DOG: { 
-        id: 'dog', name: 'いぬ', bg: 'bg-gradient-to-b from-orange-300 to-orange-500', 
-        border: 'border-orange-700', text: 'text-orange-950', icon: 'fa-dog', 
-        tag: '捜査犬', desc: '相手の手札を1枚引く。それが「犯人」なら単独勝利！' 
-      },
-      BOY: { 
-        id: 'boy', name: '少年', bg: 'bg-gradient-to-b from-cyan-200 to-cyan-400', 
-        border: 'border-cyan-600', text: 'text-cyan-950', icon: 'fa-child-reaching', 
-        tag: '目撃者', desc: '誰が犯人カードを持っているかを目撃できる。' 
-      },
-      CITIZEN: { 
-        id: 'citizen', name: '一般人', bg: 'bg-gradient-to-b from-slate-200 to-slate-400', 
-        border: 'border-slate-600', text: 'text-slate-900', icon: 'fa-user-group', 
-        tag: '無効', desc: '効果なし。安全に手札を1枚減らせる。' 
-      },
-      RUMOR: { 
-        id: 'rumor', name: 'うわさ', bg: 'bg-gradient-to-b from-pink-300 to-pink-500', 
-        border: 'border-pink-700', text: 'text-pink-950', icon: 'fa-comments', 
-        tag: '全体交換', desc: '全員が右隣の人の手札からランダムに1枚引く。' 
-      },
-      INFORMATION: { 
-        id: 'information', name: '情報操作', bg: 'bg-gradient-to-b from-teal-200 to-teal-400', 
-        border: 'border-teal-600', text: 'text-teal-950', icon: 'fa-arrow-rotate-right', 
-        tag: '手札移動', desc: '全員が左隣の人に好きな手札を1枚渡す。' 
-      },
-      TRADE: { 
-        id: 'trade', name: '取り引き', bg: 'bg-gradient-to-b from-yellow-300 to-yellow-500', 
-        border: 'border-yellow-700', text: 'text-yellow-950', icon: 'fa-handshake', 
-        tag: '1対1交換', desc: '指定したプレイヤーとカードを1枚交換する。' 
-      }
-    };
-
-    function App() {
-      const [screen, setScreen] = useState('title');
-      const [roomCode, setRoomCode] = useState('');
-      const [inputCode, setInputCode] = useState('');
-      const [playerName, setPlayerName] = useState('');
-      const [isHost, setIsHost] = useState(false);
-      const [statusText, setStatusText] = useState('');
-      const [isBgmOn, setIsBgmOn] = useState(false);
-      
-      const [players, setPlayers] = useState([]);
-      const [myId, setMyId] = useState(null);
-      const [turnIndex, setTurnIndex] = useState(0);
-      const [playedStack, setPlayedStack] = useState([]);
-      const [logs, setLogs] = useState([]);
-      const [winner, setWinner] = useState(null);
-      const [pendingTargetCard, setPendingTargetCard] = useState(null);
-      const [showRules, setShowRules] = useState(false);
-      const logEndRef = useRef(null);
-
-      const peerRef = useRef(null);
-      const connectionsRef = useRef([]);
-
-      const stateRef = useRef({ players: [], turnIndex: 0, playedStack: [], logs: [] });
-      useEffect(() => {
-        stateRef.current = { players, turnIndex, playedStack, logs };
-      }, [players, turnIndex, playedStack, logs]);
-
-      useEffect(() => {
-        if (logEndRef.current) {
-          logEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, [logs]);
-
-      const toggleBGM = () => {
-        getAudioContext();
-        if (isBgmOn) {
-          stopBGM();
-          setIsBgmOn(false);
-        } else {
-          startBGM();
-          setIsBgmOn(true);
-        }
-      };
-
-      const generate3DigitCode = () => Math.floor(100 + Math.random() * 900).toString();
-
-      const handleCreateRoom = () => {
-        getAudioContext();
-        if (!playerName.trim()) return alert('名前を入力してください！');
-        setStatusText('部屋を作成中...');
-        const code = generate3DigitCode();
-        setRoomCode(code);
-        setIsHost(true);
-
-        const hostPeerId = `h-odoru-${code}`;
-        if (peerRef.current) peerRef.current.destroy();
-
-        const peer = new Peer(hostPeerId);
-        peerRef.current = peer;
-
-        peer.on('open', (id) => {
-          setMyId(id);
-          setStatusText('');
-          const initialPlayers = [{ id, name: playerName.trim(), hand: [], played: [] }];
-          setPlayers(initialPlayers);
-          setScreen('lobby');
-        });
-
-        peer.on('connection', (conn) => {
-          connectionsRef.current.push(conn);
-          conn.on('data', (data) => handleHostReceiveData(data, conn));
-        });
-
-        peer.on('error', (err) => {
-          setStatusText('');
-          if (err.type === 'unavailable-id') {
-            handleCreateRoom();
-          } else {
-            alert('接続エラーが発生しました。時間を置いて再度お試しください。');
-          }
-        });
-      };
-
-      const handleJoinRoom = () => {
-        getAudioContext();
-        if (!playerName.trim()) return alert('名前を入力してください！');
-        if (inputCode.trim().length !== 3) return alert('3桁の部屋番号を入力してください！');
-
-        setStatusText('部屋へ接続中...');
-        const code = inputCode.trim();
-        setRoomCode(code);
-        setIsHost(false);
-
-        if (peerRef.current) peerRef.current.destroy();
-
-        const peer = new Peer();
-        peerRef.current = peer;
-
-        peer.on('open', (id) => {
-          setMyId(id);
-          const hostPeerId = `h-odoru-${code}`;
-          const conn = peer.connect(hostPeerId);
-          connectionsRef.current = [conn];
-
-          const timer = setTimeout(() => {
-            setStatusText('');
-            alert(`部屋番号 [${code}] が見つかりませんでした。ホストが部屋を作成しているか確認してください。`);
-          }, 8000);
-
-          conn.on('open', () => {
-            clearTimeout(timer);
-            setStatusText('');
-            conn.send({ type: 'JOIN', name: playerName.trim(), id });
-            setScreen('lobby');
-          });
-
-          conn.on('data', (data) => handleClientReceiveData(data));
-        });
-
-        peer.on('error', (err) => {
-          setStatusText('');
-          alert('接続に失敗しました。部屋番号が正しいか確認してください。');
-        });
-      };
-
-      const broadcast = (data) => {
-        connectionsRef.current.forEach(conn => {
-          if (conn.open) conn.send(data);
-        });
-      };
-
-      const handleHostReceiveData = (data, conn) => {
-        if (data.type === 'JOIN') {
-          const currentPlayers = stateRef.current.players;
-          if (!currentPlayers.some(p => p.id === data.id)) {
-            const updated = [...currentPlayers, { id: data.id, name: data.name, hand: [], played: [] }];
-            setPlayers(updated);
-            broadcast({ type: 'SYNC_LOBBY', players: updated });
-          }
-        } else if (data.type === 'PLAY_CARD') {
-          processCardPlay(data.playerIdx, data.cardIdx, data.targetId);
-        }
-      };
-
-      const handleClientReceiveData = (data) => {
-        if (data.type === 'SYNC_LOBBY') {
-          setPlayers(data.players);
-        } else if (data.type === 'START_GAME') {
-          setPlayers(data.players);
-          setTurnIndex(data.turnIndex);
-          setPlayedStack(data.playedStack || []);
-          setLogs(data.logs);
-          setScreen('game');
-          SOUNDS.playCard();
-        } else if (data.type === 'UPDATE_STATE') {
-          setPlayers(data.players);
-          setTurnIndex(data.turnIndex);
-          setPlayedStack(data.playedStack || []);
-          setLogs(data.logs);
-          if (data.soundEffect) {
-            if (SOUNDS[data.soundEffect]) SOUNDS[data.soundEffect]();
-          } else {
-            SOUNDS.playCard();
-          }
-          if (data.winner) {
-            setWinner(data.winner);
-            setScreen('result');
-            SOUNDS.win();
-          }
-        }
-      };
-
-      const handleStartGame = () => {
-        if (players.length < 3) {
-          alert('ゲームを開始するには最低3人のプレイヤーが必要です！');
-          return;
-        }
-
-        const count = players.length;
-        let deck = [];
-        deck.push({ ...CARD_TYPES.FIRST_DISCOVERER, instanceId: Math.random() });
-        deck.push({ ...CARD_TYPES.CRIMINAL, instanceId: Math.random() });
-        deck.push({ ...CARD_TYPES.DETECTIVE, instanceId: Math.random() });
-        deck.push({ ...CARD_TYPES.ALIBI, instanceId: Math.random() });
-        deck.push({ ...CARD_TYPES.SCHEME, instanceId: Math.random() });
-
-        const fillerTypes = [
-          CARD_TYPES.CITIZEN, CARD_TYPES.RUMOR, CARD_TYPES.INFORMATION,
-          CARD_TYPES.TRADE, CARD_TYPES.DOG, CARD_TYPES.BOY,
-          CARD_TYPES.DETECTIVE, CARD_TYPES.ALIBI
-        ];
-
-        while (deck.length < count * 4) {
-          const randType = fillerTypes[Math.floor(Math.random() * fillerTypes.length)];
-          deck.push({ ...randType, instanceId: Math.random() });
-        }
-
-        for (let i = deck.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [deck[i], deck[j]] = [deck[j], deck[i]];
-        }
-
-        let starterIdx = 0;
-        const updatedPlayers = players.map((p, pIdx) => {
-          const hand = deck.slice(pIdx * 4, (pIdx + 1) * 4);
-          if (hand.some(c => c.id === 'first_discoverer')) starterIdx = pIdx;
-          return { ...p, hand, played: [] };
-        });
-
-        const initialLogs = [`🎮 ゲーム開始！【第一発見者】を持つ ${updatedPlayers[starterIdx].name} からスタートです！`];
-
-        setPlayers(updatedPlayers);
-        setTurnIndex(starterIdx);
-        setPlayedStack([]);
-        setLogs(initialLogs);
-        setScreen('game');
-        SOUNDS.playCard();
-
-        broadcast({
-          type: 'START_GAME',
-          players: updatedPlayers,
-          turnIndex: starterIdx,
-          playedStack: [],
-          logs: initialLogs
-        });
-      };
-
-      const clickPlayCard = (cardIdx) => {
-        const myIdx = players.findIndex(p => p.id === myId);
-        if (turnIndex !== myIdx) return;
-
-        const card = players[myIdx].hand[cardIdx];
-
-        if (['detective', 'dog', 'trade'].includes(card.id)) {
-          setPendingTargetCard({ cardIdx, card });
-          return;
-        }
-
-        submitPlayCard(myIdx, cardIdx, null);
-      };
-
-      const submitPlayCard = (playerIdx, cardIdx, targetId) => {
-        if (!isHost) {
-          connectionsRef.current[0].send({ type: 'PLAY_CARD', playerIdx, cardIdx, targetId });
-          setPendingTargetCard(null);
-          return;
-        }
-        processCardPlay(playerIdx, cardIdx, targetId);
-        setPendingTargetCard(null);
-      };
-
-      const processCardPlay = (playerIdx, cardIdx, targetId) => {
-        const curState = stateRef.current;
-        const currentPlayers = JSON.parse(JSON.stringify(curState.players));
-        const currentPlayer = currentPlayers[playerIdx];
-        const card = currentPlayer.hand[cardIdx];
-
-        let newLogs = [...curState.logs, `📢 ${currentPlayer.name} が【${card.name}】を出しました！`];
-        let soundEffect = 'playCard';
-
-        currentPlayer.hand.splice(cardIdx, 1);
-        currentPlayer.played = [...(currentPlayer.played || []), card];
-
-        const newPlayedStack = [...curState.playedStack, { card, playedBy: currentPlayer.name }];
-        let gameWinner = null;
-
-        switch (card.id) {
-          case 'first_discoverer':
-            newLogs.push(`🔍 事件発生！${currentPlayer.name} が遺体を発見しました。`);
-            break;
-
-          case 'criminal':
-            gameWinner = calculateWinner('criminal', playerIdx, currentPlayers);
-            newLogs.push(`😈 犯人が踊りきった！【犯人】を出した ${currentPlayer.name} の勝利！`);
-            break;
-
-          case 'detective':
-            soundEffect = 'detective';
-            if (targetId) {
-              const target = currentPlayers.find(p => p.id === targetId);
-              newLogs.push(`🕵️ ${currentPlayer.name} が ${target.name} に「あなたが犯人ですか？」と追及！`);
-
-              const hasCriminal = target.hand.some(c => c.id === 'criminal');
-              const hasAlibi = target.hand.some(c => c.id === 'alibi');
-
-              if (hasCriminal && !hasAlibi) {
-                newLogs.push(`🎯 ${target.name} 「参りました…私が犯人です！」`);
-                gameWinner = calculateWinner('detective', playerIdx, currentPlayers);
-              } else if (hasCriminal && hasAlibi) {
-                newLogs.push(`🛡️ ${target.name} 「アリバイがあります！犯人ではありません。」`);
-              } else {
-                newLogs.push(`❌ ${target.name} 「違います！犯人ではありません。」`);
-              }
-            }
-            break;
-
-          case 'dog':
-            soundEffect = 'swapCard';
-            if (targetId) {
-              const target = currentPlayers.find(p => p.id === targetId);
-              if (target.hand.length > 0) {
-                const stolenIdx = Math.floor(Math.random() * target.hand.length);
-                const stolen = target.hand[stolenIdx];
-
-                target.hand.splice(stolenIdx, 1);
-                currentPlayer.hand.push(stolen);
-
-                newLogs.push(`🐕 ${currentPlayer.name} の「いぬ」が ${target.name} から【${stolen.name}】を引き抜いた！`);
-
-                if (stolen.id === 'criminal') {
-                  newLogs.push(`🎉 「いぬ」が犯人カードをクンクン当てました！`);
-                  gameWinner = calculateWinner('dog', playerIdx, currentPlayers);
-                }
-              }
-            }
-            break;
-
-          case 'boy':
-            const crim = currentPlayers.find(p => p.hand.some(c => c.id === 'criminal'));
-            newLogs.push(crim ? `👁️ 「少年」が目撃した！犯人は… ${crim.name} だ！（非公開情報）` : `👁️ 「少年」は何も目撃できなかった…`);
-            break;
-
-          case 'trade':
-            soundEffect = 'swapCard';
-            if (targetId) {
-              const target = currentPlayers.find(p => p.id === targetId);
-              if (currentPlayer.hand.length > 0 && target.hand.length > 0) {
-                // アクターとターゲットの手札末尾を交換
-                const actorCard = currentPlayer.hand.pop();
-                const targetCard = target.hand.pop();
-                currentPlayer.hand.push(targetCard);
-                target.hand.push(actorCard);
-                newLogs.push(`🤝 ${currentPlayer.name} と ${target.name} がカードを1枚交換しました。`);
-              }
-            }
-            break;
-
-          case 'rumor':
-            soundEffect = 'swapCard';
-            newLogs.push(`🗣️ うわすが流れた！全員が右隣の人の手札から1枚引き抜きます。`);
-            const pCount = currentPlayers.length;
-            const stolenList = [];
-
-            // 各自が右隣から引き抜くカードを事前選定
-            for (let i = 0; i < pCount; i++) {
-              const rightIdx = (i + 1) % pCount;
-              const rightHand = currentPlayers[rightIdx].hand;
-              if (rightHand.length > 0) {
-                const randIdx = Math.floor(Math.random() * rightHand.length);
-                stolenList.push({
-                  fromIdx: rightIdx,
-                  toIdx: i,
-                  card: rightHand[randIdx],
-                  randIdx
-                });
-              }
-            }
-            // 削除
-            stolenList.forEach(item => {
-              const idx = currentPlayers[item.fromIdx].hand.findIndex(c => c.instanceId === item.card.instanceId);
-              if (idx !== -1) currentPlayers[item.fromIdx].hand.splice(idx, 1);
-            });
-            // 追加
-            stolenList.forEach(item => {
-              currentPlayers[item.toIdx].hand.push(item.card);
-            });
-            break;
-
-          case 'information':
-            soundEffect = 'swapCard';
-            newLogs.push(`🔄 情報操作！全員が左隣の人にカードを1枚ずつ渡しました。`);
-            const countP = currentPlayers.length;
-            const passList = [];
-
-            // 各自が左隣に渡すカードを選定（各手札の最初の1枚）
-            for (let i = 0; i < countP; i++) {
-              const leftIdx = (i - 1 + countP) % countP;
-              const pHand = currentPlayers[i].hand;
-              if (pHand.length > 0) {
-                passList.push({
-                  fromIdx: i,
-                  toIdx: leftIdx,
-                  card: pHand[0]
-                });
-              }
-            }
-            // 削除
-            passList.forEach(item => {
-              const idx = currentPlayers[item.fromIdx].hand.findIndex(c => c.instanceId === item.card.instanceId);
-              if (idx !== -1) currentPlayers[item.fromIdx].hand.splice(idx, 1);
-            });
-            // 追加
-            passList.forEach(item => {
-              currentPlayers[item.toIdx].hand.push(item.card);
-            });
-            break;
-
-          default:
-            break;
-        }
-
-        let nextTurn = (curState.turnIndex + 1) % currentPlayers.length;
-        let loopCount = 0;
-        while (currentPlayers[nextTurn].hand.length === 0 && loopCount < currentPlayers.length) {
-          nextTurn = (nextTurn + 1) % currentPlayers.length;
-          loopCount++;
-        }
-
-        setPlayers(currentPlayers);
-        setTurnIndex(nextTurn);
-        setPlayedStack(newPlayedStack);
-        setLogs(newLogs);
-
-        if (SOUNDS[soundEffect]) SOUNDS[soundEffect]();
-
-        if (gameWinner) {
-          setWinner(gameWinner);
-          setScreen('result');
-          SOUNDS.win();
-        }
-
-        broadcast({
-          type: 'UPDATE_STATE',
-          players: currentPlayers,
-          turnIndex: nextTurn,
-          playedStack: newPlayedStack,
-          logs: newLogs,
-          soundEffect,
-          winner: gameWinner
-        });
-      };
-
-      const calculateWinner = (type, winnerIdx, currentPlayers) => {
-        let winners = [currentPlayers[winnerIdx].name];
-        if (type === 'criminal') {
-          currentPlayers.forEach(p => {
-            if (p.hand.some(c => c.id === 'scheme') || p.played.some(c => c.id === 'scheme')) {
-              if (!winners.includes(p.name)) winners.push(p.name);
-            }
-          });
-        }
-        return { type, names: winners.join(', ') };
-      };
-
-      const getOrderedPlayersForTable = () => {
-        const myIdx = players.findIndex(p => p.id === myId);
-        if (myIdx === -1) return players;
-        const result = [];
-        for (let i = 0; i < players.length; i++) {
-          result.push(players[(myIdx + i) % players.length]);
-        }
-        return result;
-      };
-
-      const orderedPlayers = getOrderedPlayersForTable();
-      const lastPlayed = playedStack.length > 0 ? playedStack[playedStack.length - 1] : null;
-
-      return (
-        <div className="min-h-screen flex flex-col justify-between max-w-6xl mx-auto px-3 py-3 select-none">
-          {/* HEADER */}
-          <header className="flex justify-between items-center bg-amber-400 border-4 border-slate-900 rounded-2xl p-2.5 pop-shadow mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-rose-500 rounded-full border-2 border-slate-900 flex items-center justify-center text-lg shadow">
-                🕵️
-              </div>
-              <div>
-                <h1 className="text-lg font-black text-slate-900 tracking-wider flex items-center gap-2">
-                  犯人は踊る
-                  <span className="text-[10px] bg-slate-900 text-amber-400 font-mono px-2 py-0.5 rounded-full border border-amber-400/50 shadow-sm">
-                    ver 1.5
-                  </span>
-                </h1>
-                <p className="text-[9px] text-amber-950 font-extrabold">REAL CARD TABLE EDITION</p>
-              </div>
+<body>
+
+    <div id="portrait-warning">
+        <h2>画面を横向きにしてください</h2>
+        <p style="margin-top: 10px; color: #aaa;">このゲームは横画面専用です。</p>
+    </div>
+
+    <div id="game-container">
+        <canvas id="canvas" width="960" height="540"></canvas>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div class="player-card p1">
+                <div class="p-name" style="color:#ff4444;">1P (HOST)</div>
+                <div class="p-damage" id="p1-damage">0%</div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={toggleBGM}
-                className={`border-2 border-slate-900 px-3 py-1 rounded-xl font-extrabold text-xs shadow transition ${
-                  isBgmOn ? 'bg-emerald-400 text-slate-900' : 'bg-slate-200 text-slate-700'
-                }`}
-              >
-                <i className="fa-solid fa-music"></i> BGM {isBgmOn ? 'ON' : 'OFF'}
-              </button>
-
-              {roomCode && (
-                <div className="bg-slate-900 text-amber-400 font-black px-3 py-1 rounded-xl text-xs border-2 border-amber-500">
-                  部屋番号: <span className="text-sm font-mono tracking-widest">{roomCode}</span>
-                </div>
-              )}
-
-              <button 
-                onClick={() => setShowRules(true)}
-                className="bg-sky-400 hover:bg-sky-300 text-slate-900 border-2 border-slate-900 px-3 py-1 rounded-xl font-extrabold text-xs shadow"
-              >
-                <i className="fa-solid fa-book-open"></i> ルール
-              </button>
+            <div class="player-card p2">
+                <div class="p-name" style="color:#4488ff;">2P (GUEST)</div>
+                <div class="p-damage" id="p2-damage">0%</div>
             </div>
-          </header>
-
-          {/* TITLE SCREEN */}
-          {screen === 'title' && (
-            <div className="my-auto py-8 flex flex-col items-center">
-              <div className="bg-amber-400 border-4 border-slate-900 rounded-3xl p-8 max-w-md w-full pop-shadow text-slate-900 text-center">
-                <div className="inline-block bg-rose-500 text-white text-xs font-black px-4 py-1.5 rounded-full border-2 border-slate-900 mb-4 shadow">
-                  3桁コードで即対戦！
-                </div>
-                <h2 className="text-3xl font-black mb-6 tracking-wide">部屋を選んで遊ぼう！</h2>
-
-                {statusText && (
-                  <div className="mb-4 bg-slate-900 text-amber-400 font-bold text-xs py-2 px-3 rounded-xl border border-amber-400 animate-pulse">
-                    {statusText}
-                  </div>
-                )}
-
-                <div className="space-y-4 mb-6">
-                  <div className="text-left">
-                    <label className="block text-xs font-black mb-1">あなたの名前:</label>
-                    <input
-                      type="text"
-                      placeholder="例: たろう"
-                      value={playerName}
-                      onChange={(e) => setPlayerName(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border-3 border-slate-900 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-rose-400"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    onClick={handleCreateRoom}
-                    className="w-full bg-rose-500 hover:bg-rose-400 text-white font-black py-4 rounded-2xl border-3 border-slate-900 pop-button text-base flex items-center justify-center gap-2"
-                  >
-                    <i className="fa-solid fa-plus text-xl"></i> 部屋を作る (ホスト)
-                  </button>
-
-                  <div className="relative my-2 flex items-center justify-center">
-                    <hr className="w-full border-slate-900 border-dashed" />
-                    <span className="absolute bg-amber-400 px-3 text-xs font-black">または</span>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      placeholder="3桁番号"
-                      maxLength={3}
-                      value={inputCode}
-                      onChange={(e) => setInputCode(e.target.value)}
-                      className="w-1/2 px-3 py-3 bg-white border-3 border-slate-900 rounded-2xl font-mono text-center font-black text-xl text-slate-900 focus:outline-none"
-                    />
-                    <button
-                      onClick={handleJoinRoom}
-                      className="w-1/2 bg-sky-400 hover:bg-sky-300 text-slate-900 font-black py-3 rounded-2xl border-3 border-slate-900 pop-button text-sm flex items-center justify-center gap-1"
-                    >
-                      <i className="fa-solid fa-right-to-bracket"></i> 参加する
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* LOBBY SCREEN */}
-          {screen === 'lobby' && (
-            <div className="my-auto py-8 flex flex-col items-center">
-              <div className="bg-amber-400 border-4 border-slate-900 rounded-3xl p-6 max-w-md w-full pop-shadow text-slate-900">
-                <div className="text-center mb-6">
-                  <span className="text-xs font-black bg-slate-900 text-amber-400 px-3 py-1 rounded-full border border-amber-400">
-                    ROOM CODE
-                  </span>
-                  <div className="text-5xl font-black font-mono tracking-widest text-slate-900 my-2">
-                    {roomCode}
-                  </div>
-                  <p className="text-xs font-bold text-amber-950">友達にこの3桁の部屋番号を伝えてね！</p>
-                </div>
-
-                <div className="bg-amber-100 border-3 border-slate-900 rounded-2xl p-4 mb-6">
-                  <h3 className="font-black text-xs text-slate-700 mb-3 flex items-center gap-2">
-                    <i className="fa-solid fa-users text-rose-500"></i> 参加メンバー ({players.length}/5人)
-                  </h3>
-                  <div className="space-y-2">
-                    {players.map((p, i) => (
-                      <div key={p.id} className="bg-white border-2 border-slate-900 px-3 py-2 rounded-xl flex justify-between items-center font-extrabold text-sm shadow-sm">
-                        <span className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-rose-400 text-white text-xs flex items-center justify-center border border-slate-900">
-                            {i + 1}
-                          </span>
-                          {p.name}
-                        </span>
-                        {i === 0 && (
-                          <span className="text-[10px] bg-amber-400 text-slate-900 border border-slate-900 px-2 py-0.5 rounded-md">
-                            ホスト
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {isHost ? (
-                  <button
-                    onClick={handleStartGame}
-                    className="w-full bg-rose-500 hover:bg-rose-400 text-white font-black py-4 rounded-2xl border-3 border-slate-900 pop-button text-lg flex items-center justify-center gap-2"
-                  >
-                    <i className="fa-solid fa-play"></i> ゲームを開始する！
-                  </button>
-                ) : (
-                  <div className="text-center py-3 bg-amber-300 border-2 border-slate-900 rounded-xl font-black text-sm text-amber-950 animate-pulse">
-                    ホストがゲームを開始するのを待っています...
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* MAIN CARD TABLE GAME SCREEN */}
-          {screen === 'game' && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-auto">
-              
-              <div className="md:col-span-3 felt-table rounded-3xl p-4 flex flex-col justify-between min-h-[560px] relative overflow-hidden">
-                
-                <div className="flex justify-around items-center w-full z-10 pt-2">
-                  {orderedPlayers.slice(1).map(p => {
-                    const isTurn = players[turnIndex]?.id === p.id;
-                    return (
-                      <div
-                        key={p.id}
-                        className={`flex flex-col items-center p-2 rounded-2xl border-3 transition backdrop-blur-sm ${
-                          isTurn
-                            ? 'bg-amber-400 border-slate-900 text-slate-900 font-black shadow-xl scale-110 ring-4 ring-rose-500 animate-bounce'
-                            : 'bg-slate-900/85 border-emerald-600 text-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 px-2">
-                          <i className="fa-solid fa-user text-xs"></i>
-                          <span className="text-xs font-black max-w-[100px] truncate">{p.name}</span>
-                        </div>
-                        
-                        <div className="flex gap-1 mt-1.5">
-                          {p.hand.map((_, hIdx) => (
-                            <div
-                              key={hIdx}
-                              className="w-4 h-6 rounded bg-gradient-to-br from-indigo-800 to-rose-900 border border-amber-300/60 shadow flex items-center justify-center text-[8px] text-amber-300"
-                            >
-                              🎴
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="my-auto flex flex-col items-center justify-center z-10">
-                  <span className="text-[11px] font-black bg-slate-900/80 text-amber-300 px-3 py-1 rounded-full border border-amber-400/40 mb-2">
-                    中央の場 (出したカード)
-                  </span>
-
-                  {lastPlayed ? (
-                    <div className="flex flex-col items-center animate-pop-card">
-                      <div className={`card-real w-32 h-48 rounded-2xl p-3 ${lastPlayed.card.bg} border-4 ${lastPlayed.card.border} ${lastPlayed.card.text} flex flex-col justify-between relative`}>
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[9px] font-black bg-black/20 px-1.5 py-0.5 rounded border border-white/20">
-                              {lastPlayed.card.tag}
-                            </span>
-                            <i className={`fa-solid ${lastPlayed.card.icon} text-sm opacity-80`}></i>
-                          </div>
-                          <h4 className="font-black text-sm text-center my-1 tracking-wider">{lastPlayed.card.name}</h4>
-                        </div>
-                        
-                        <div className="my-auto text-center">
-                          <i className={`fa-solid ${lastPlayed.card.icon} text-3xl opacity-30`}></i>
-                        </div>
-
-                        <p className="text-[9px] font-bold leading-tight text-center bg-white/30 backdrop-blur-sm p-1 rounded-lg border border-white/40">
-                          {lastPlayed.card.desc}
-                        </p>
-                      </div>
-
-                      <div className="mt-2 text-xs font-black bg-amber-400 text-slate-900 px-3 py-0.5 rounded-full border border-slate-900 shadow">
-                        出者: {lastPlayed.playedBy}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-32 h-48 rounded-2xl border-4 border-dashed border-emerald-400/40 flex flex-col items-center justify-center text-emerald-200/60 font-bold text-xs">
-                      <i className="fa-solid fa-layer-group text-2xl mb-2"></i>
-                      カード未提出
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-slate-950/90 border-3 border-amber-400 rounded-3xl p-3 z-10 shadow-2xl">
-                  <div className="flex justify-between items-center mb-2 px-1">
-                    <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
-                      <i className="fa-solid fa-hand text-rose-400"></i> あなたの手札 ({players.find(p => p.id === myId)?.hand.length || 0}枚)
-                    </span>
-
-                    {players[turnIndex]?.id === myId ? (
-                      <span className="text-xs font-black bg-rose-500 text-white px-3 py-1 rounded-full border border-slate-900 animate-pulse">
-                        あなたの番です！カードを選んで出してください
-                      </span>
-                    ) : (
-                      <span className="text-xs font-bold text-slate-400">
-                        {players[turnIndex]?.name} の思考中...
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {players.find(p => p.id === myId)?.hand.map((card, cIdx) => {
-                      const isMyTurn = players[turnIndex]?.id === myId;
-                      return (
-                        <div
-                          key={card.instanceId}
-                          className={`card-real rounded-2xl p-2.5 ${card.bg} border-3 ${card.border} ${card.text} flex flex-col justify-between h-40 relative`}
-                        >
-                          <div>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-[8px] font-black bg-black/20 px-1 rounded">
-                                {card.tag}
-                              </span>
-                              <i className={`fa-solid ${card.icon} text-xs opacity-80`}></i>
-                            </div>
-                            <h5 className="font-black text-xs text-center mb-1">{card.name}</h5>
-                            <p className="text-[9px] font-bold leading-tight opacity-90">{card.desc}</p>
-                          </div>
-
-                          {isMyTurn ? (
-                            <button
-                              onClick={() => clickPlayCard(cIdx)}
-                              className="w-full bg-slate-900 hover:bg-rose-600 text-white font-black text-xs py-1.5 rounded-xl border border-white/20 transition shadow pop-button mt-1"
-                            >
-                              場に出す！
-                            </button>
-                          ) : (
-                            <div className="text-[9px] font-black text-center opacity-50 py-1 bg-black/10 rounded-lg">待機</div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-              </div>
-
-              <div className="bg-amber-400 border-4 border-slate-900 rounded-3xl p-4 flex flex-col h-[560px] pop-shadow">
-                <h3 className="font-black text-xs text-slate-900 mb-3 flex items-center gap-1.5 border-b-2 border-slate-900 pb-2">
-                  <i className="fa-solid fa-list-ul text-rose-500"></i> ゲーム進行ログ
-                </h3>
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs font-bold">
-                  {logs.map((log, idx) => (
-                    <div key={idx} className="bg-white border-2 border-slate-900 p-2.5 rounded-xl text-slate-900 shadow-sm leading-relaxed">
-                      {log}
-                    </div>
-                  ))}
-                  <div ref={logEndRef} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {pendingTargetCard && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-amber-400 border-4 border-slate-900 rounded-3xl p-6 max-w-sm w-full pop-shadow text-slate-900">
-                <h3 className="font-black text-base mb-1 text-center">対象のプレイヤーを選択</h3>
-                <p className="text-xs font-bold text-amber-950 text-center mb-4">
-                  【{pendingTargetCard.card.name}】を誰に対して使いますか？
-                </p>
-
-                <div className="space-y-2 mb-4">
-                  {players.filter(p => p.id !== myId && p.hand.length > 0).map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        const myIdx = players.findIndex(pl => pl.id === myId);
-                        submitPlayCard(myIdx, pendingTargetCard.cardIdx, p.id);
-                      }}
-                      className="w-full bg-white hover:bg-rose-500 hover:text-white font-black py-3 px-4 rounded-2xl border-3 border-slate-900 pop-button text-sm flex justify-between items-center transition"
-                    >
-                      <span>{p.name}</span>
-                      <span className="text-xs opacity-75">手札 {p.hand.length}枚</span>
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setPendingTargetCard(null)}
-                  className="w-full bg-slate-800 text-white font-black py-2 rounded-xl border-2 border-slate-900 text-xs"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </div>
-          )}
-
-          {screen === 'result' && winner && (
-            <div className="my-auto py-8 flex flex-col items-center">
-              <div className="bg-amber-400 border-4 border-slate-900 rounded-3xl p-8 max-w-md w-full pop-shadow text-center text-slate-900">
-                <div className="text-6xl mb-2">🏆</div>
-                <h2 className="text-3xl font-black mb-2 text-rose-600">ゲーム決着！</h2>
-                <div className="bg-white border-3 border-slate-900 p-4 rounded-2xl mb-6">
-                  <span className="text-xs font-black text-slate-500 block mb-1">勝利者</span>
-                  <span className="text-xl font-black text-slate-900">{winner.names}</span>
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (isHost) handleStartGame();
-                  }}
-                  disabled={!isHost}
-                  className={`w-full font-black py-4 rounded-2xl border-3 border-slate-900 pop-button text-base ${
-                    isHost ? 'bg-rose-500 hover:bg-rose-400 text-white' : 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                  }`}
-                >
-                  {isHost ? 'もう一度遊ぶ！' : 'ホストが再開するのを待っています'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {showRules && (
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-amber-400 border-4 border-slate-900 rounded-3xl p-6 max-w-lg w-full max-h-[80vh] flex flex-col pop-shadow text-slate-900">
-                <div className="flex justify-between items-center mb-3 border-b-2 border-slate-900 pb-2">
-                  <h3 className="font-black text-lg text-slate-900">カード一覧・ルール</h3>
-                  <button onClick={() => setShowRules(false)} className="text-xl font-black">✕</button>
-                </div>
-                <div className="overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs font-bold">
-                  {Object.values(CARD_TYPES).map(c => (
-                    <div key={c.id} className={`p-2.5 rounded-xl border-2 ${c.border} ${c.bg} ${c.text}`}>
-                      <span className="font-black text-sm">{c.name}</span>
-                      <p className="text-[10px] mt-0.5 opacity-90">{c.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-      );
-    }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+        <!-- ロビーUI -->
+        <div id="lobby" class="overlay">
+            <div class="panel">
+                <h1>SMASH 2D ONLINE</h1>
+                <button class="btn btn-green" id="btn-create">部屋を作る (HOST)</button>
+                <div style="margin: 15px 0; border-top: 1px solid #444;"></div>
+                <input type="number" id="room-input" placeholder="3桁の部屋番号" maxlength="3" pattern="\d*">
+                <button class="btn btn-orange" id="btn-join">部屋に入る (GUEST)</button>
+                <div id="status-msg">オンライン対戦を選択してください</div>
+            </div>
+        </div>
+
+        <!-- タッチパネルUI -->
+        <div id="touch-controls">
+            <div class="touch-group">
+                <div class="dpad-btn" id="btn-left"></div>
+                <div class="dpad-btn" id="btn-right"></div>
+                <div class="dpad-btn" id="btn-down"></div>
+            </div>
+            <div class="touch-group">
+                <div class="act-btn" id="btn-jump">JUMP</div>
+                <div class="act-btn" id="btn-atk">A</div>
+                <div class="act-btn" id="btn-spec">B</div>
+                <div class="act-btn" id="btn-shield">S</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 基本設定 & キャンバス ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const STAGE = { x: 180, y: 340, width: 600, height: 20 };
+
+        // 状態定義
+        let peer = null;
+        let conn = null;
+        let isHost = false;
+        let myPlayerId = 1;
+        let gameRunning = false;
+
+        // キー入力状態
+        const keys = { left: false, right: false, down: false, jump: false, attack: false, special: false, shield: false };
+
+        // 物理パラメータ
+        const GRAVITY = 0.45;
+        const FRICTION = 0.85;
+
+        class Player {
+            constructor(id, x, color) {
+                this.id = id;
+                this.spawnX = x;
+                this.spawnY = 200;
+                this.reset();
+                this.color = color;
+                this.width = 32;
+                this.height = 48;
+            }
+
+            reset() {
+                this.x = this.spawnX;
+                this.y = this.spawnY;
+                this.vx = 0;
+                this.vy = 0;
+                this.damage = 0;
+                this.facing = this.id === 1 ? 1 : -1;
+                this.isGrounded = false;
+                this.shield = false;
+                this.shieldHP = 100;
+                this.attackTimer = 0;
+                this.hitbox = null;
+                this.state = 'idle'; // idle, attack, special, hit
+                this.hitStun = 0;
+                this.jumpsLeft = 2;
+            }
+
+            update() {
+                if (this.hitStun > 0) {
+                    this.hitStun--;
+                } else {
+                    // シールド展開
+                    if (this.shield && this.isGrounded) {
+                        this.vx *= 0.5;
+                    }
+
+                    // 攻撃判定持続カウントダウン
+                    if (this.attackTimer > 0) {
+                        this.attackTimer--;
+                        if (this.attackTimer === 0) {
+                            this.hitbox = null;
+                            this.state = 'idle';
+                        }
+                    }
+                }
+
+                // 重力 & 移動
+                this.vy += GRAVITY;
+                this.vx *= FRICTION;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // ステージ接地判定
+                this.isGrounded = false;
+                if (this.x + this.width > STAGE.x && this.x < STAGE.x + STAGE.width) {
+                    if (this.y + this.height >= STAGE.y && this.y + this.height <= STAGE.y + STAGE.height && this.vy >= 0) {
+                        this.y = STAGE.y - this.height;
+                        this.vy = 0;
+                        this.isGrounded = true;
+                        this.jumpsLeft = 2;
+                    }
+                }
+
+                // 画面外撃墜 (バースト) 判定
+                if (this.x < -100 || this.x > canvas.width + 100 || this.y < -100 || this.y > canvas.height + 100) {
+                    this.reset();
+                }
+            }
+
+            jump() {
+                if (this.hitStun > 0 || this.shield) return;
+                if (this.jumpsLeft > 0) {
+                    this.vy = -10.5;
+                    this.jumpsLeft--;
+                    this.isGrounded = false;
+                }
+            }
+
+            move(dir) {
+                if (this.hitStun > 0 || this.shield) return;
+                this.vx += dir * 0.9;
+                this.facing = dir > 0 ? 1 : -1;
+            }
+
+            fastFall() {
+                if (!this.isGrounded && this.vy > 0) {
+                    this.vy += 2.0;
+                }
+            }
+
+            attack() {
+                if (this.hitStun > 0 || this.attackTimer > 0 || this.shield) return;
+                this.state = 'attack';
+                this.attackTimer = 12;
+                this.hitbox = {
+                    x: this.facing === 1 ? this.x + this.width : this.x - 30,
+                    y: this.y + 10,
+                    w: 30,
+                    h: 25,
+                    damage: 8,
+                    baseKnockback: 6,
+                    scaling: 0.12,
+                    dir: this.facing
+                };
+            }
+
+            special() {
+                if (this.hitStun > 0 || this.attackTimer > 0 || this.shield) return;
+                // 上スペシャル（復帰技）
+                this.state = 'special';
+                this.vy = -12;
+                this.vx = this.facing * 4;
+                this.attackTimer = 20;
+                this.hitbox = {
+                    x: this.x - 10,
+                    y: this.y - 10,
+                    w: this.width + 20,
+                    h: this.height + 10,
+                    damage: 12,
+                    baseKnockback: 9,
+                    scaling: 0.15,
+                    dir: this.facing
+                };
+            }
+
+            applyHit(hitbox) {
+                if (this.shield && this.isGrounded) {
+                    // シールドガード成功
+                    this.vx = hitbox.dir * 3;
+                    return;
+                }
+                this.damage += hitbox.damage;
+                const totalKnockback = hitbox.baseKnockback + (this.damage * hitbox.scaling);
+                this.vx = hitbox.dir * totalKnockback;
+                this.vy = -totalKnockback * 0.6;
+                this.hitStun = Math.floor(totalKnockback * 1.5);
+                this.state = 'hit';
+            }
+
+            draw() {
+                ctx.save();
+                // プレイヤー本体
+                ctx.fillStyle = this.hitStun > 0 ? '#ffffff' : this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                // 向きインジケータ（目線）
+                ctx.fillStyle = '#000';
+                const eyeX = this.facing === 1 ? this.x + 20 : this.x + 4;
+                ctx.fillRect(eyeX, this.y + 8, 8, 8);
+
+                // シールド描写
+                if (this.shield && this.isGrounded) {
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 35, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(100, 200, 255, 0.4)';
+                    ctx.fill();
+                    ctx.strokeStyle = '#00ffff';
+                    ctx.stroke();
+                }
+
+                // 攻撃判定（Hitbox）表示
+                if (this.hitbox) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                    ctx.fillRect(this.hitbox.x, this.hitbox.y, this.hitbox.w, this.hitbox.h);
+                }
+                ctx.restore();
+            }
+        }
+
+        const p1 = new Player(1, 280, '#ff4444');
+        const p2 = new Player(2, 640, '#4488ff');
+
+        // --- ネットワーク (PeerJS) ---
+        const statusMsg = document.getElementById('status-msg');
+
+        function generate3DigitCode() {
+            return Math.floor(100 + Math.random() * 900).toString();
+        }
+
+        document.getElementById('btn-create').addEventListener('click', () => {
+            const roomCode = generate3DigitCode();
+            const peerId = 'smash2d-room-' + roomCode;
+
+            statusMsg.innerText = '部屋を作成中...';
+            peer = new Peer(peerId);
+
+            peer.on('open', () => {
+                isHost = true;
+                myPlayerId = 1;
+                statusMsg.innerHTML = `<b style="color:#00ff00; font-size:18px;">部屋番号: ${roomCode}</b><br>参加者を待っています...`;
+            });
+
+            peer.on('connection', (c) => {
+                conn = c;
+                setupConnection();
+            });
+
+            peer.on('error', (err) => {
+                statusMsg.innerText = 'エラー: この部屋番号は既に使われている可能性があります';
+            });
+        });
+
+        document.getElementById('btn-join').addEventListener('click', () => {
+            const roomCode = document.getElementById('room-input').value;
+            if (roomCode.length !== 3) {
+                alert('3桁の部屋番号を入力してください');
+                return;
+            }
+
+            const peerId = 'smash2d-room-' + roomCode;
+            statusMsg.innerText = '部屋に接続中...';
+            peer = new Peer();
+
+            peer.on('open', () => {
+                isHost = false;
+                myPlayerId = 2;
+                conn = peer.connect(peerId);
+                setupConnection();
+            });
+
+            peer.on('error', (err) => {
+                statusMsg.innerText = '接続エラー: 部屋が見つかりません';
+            });
+        });
+
+        function setupConnection() {
+            conn.on('open', () => {
+                document.getElementById('lobby').style.display = 'none';
+                gameRunning = true;
+                requestAnimationFrame(gameLoop);
+            });
+
+            conn.on('data', (data) => {
+                // 対戦相手からの入力・同期データの受信
+                if (isHost) {
+                    // ホスト側はゲストの入力のみ受信
+                    applyInput(p2, data.keys);
+                } else {
+                    // ゲスト側はホストから送信されるゲーム全体の物理結果を同調
+                    p1.x = data.p1.x; p1.y = data.p1.y;
+                    p1.facing = data.p1.facing; p1.damage = data.p1.damage;
+                    p1.shield = data.p1.shield; p1.hitbox = data.p1.hitbox;
+
+                    p2.x = data.p2.x; p2.y = data.p2.y;
+                    p2.facing = data.p2.facing; p2.damage = data.p2.damage;
+                    p2.shield = data.p2.shield; p2.hitbox = data.p2.hitbox;
+                }
+            });
+        }
+
+        function applyInput(player, inputKeys) {
+            if (inputKeys.left) player.move(-1);
+            if (inputKeys.right) player.move(1);
+            if (inputKeys.down) player.fastFall();
+            if (inputKeys.jumpTrigger) player.jump();
+            if (inputKeys.attackTrigger) player.attack();
+            if (inputKeys.specialTrigger) player.special();
+            player.shield = inputKeys.shield;
+        }
+
+        // --- 入力ハンドリング ---
+        let jumpPressed = false, attackPressed = false, specialPressed = false;
+
+        function checkTriggers() {
+            // トリガー入力（押しっぱなし防止用）
+            keys.jumpTrigger = keys.jump && !jumpPressed;
+            jumpPressed = keys.jump;
+
+            keys.attackTrigger = keys.attack && !attackPressed;
+            attackPressed = keys.attack;
+
+            keys.specialTrigger = keys.special && !specialPressed;
+            specialPressed = keys.special;
+        }
+
+        // キーボード操作
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
+            if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
+            if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
+            if (e.key === 'w' || e.key === 'ArrowUp' || e.key === ' ') keys.jump = true;
+            if (e.key === 'j' || e.key === 'z') keys.attack = true;
+            if (e.key === 'k' || e.key === 'x') keys.special = true;
+            if (e.key === 'l' || e.key === 'c') keys.shield = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
+            if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
+            if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
+            if (e.key === 'w' || e.key === 'ArrowUp' || e.key === ' ') keys.jump = false;
+            if (e.key === 'j' || e.key === 'z') keys.attack = false;
+            if (e.key === 'k' || e.key === 'x') keys.special = false;
+            if (e.key === 'l' || e.key === 'c') keys.shield = false;
+        });
+
+        // スマホ タッチ操作の設定
+        function bindTouch(elementId, keyName) {
+            const btn = document.getElementById(elementId);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+        }
+        bindTouch('btn-left', 'left');
+        bindTouch('btn-right', 'right');
+        bindTouch('btn-down', 'down');
+        bindTouch('btn-jump', 'jump');
+        bindTouch('btn-atk', 'attack');
+        bindTouch('btn-spec', 'special');
+        bindTouch('btn-shield', 'shield');
+
+
+        // --- ゲームループ & 衝突判定 ---
+        function checkHitboxes() {
+            // P1 -> P2
+            if (p1.hitbox) {
+                if (isColliding(p1.hitbox, p2)) {
+                    p2.applyHit(p1.hitbox);
+                    p1.hitbox = null; // 1度ヒットしたら判定消失
+                }
+            }
+            // P2 -> P1
+            if (p2.hitbox) {
+                if (isColliding(p2.hitbox, p1)) {
+                    p1.applyHit(p2.hitbox);
+                    p2.hitbox = null;
+                }
+            }
+        }
+
+        function isColliding(rect, player) {
+            return rect.x < player.x + player.width &&
+                   rect.x + rect.w > player.x &&
+                   rect.y < player.y + player.height &&
+                   rect.y + rect.h > player.y;
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            checkTriggers();
+
+            if (isHost) {
+                // ホストがゲーム全体を演算処理
+                applyInput(p1, keys);
+                p1.update();
+                p2.update();
+                checkHitboxes();
+
+                // ゲストへ最新状態を送信
+                if (conn && conn.open) {
+                    conn.send({
+                        p1: { x: p1.x, y: p1.y, facing: p1.facing, damage: p1.damage, shield: p1.shield, hitbox: p1.hitbox },
+                        p2: { x: p2.x, y: p2.y, facing: p2.facing, damage: p2.damage, shield: p2.shield, hitbox: p2.hitbox }
+                    });
+                }
+            } else {
+                // ゲストは自身の入力キー情報のみホストへ送信
+                if (conn && conn.open) {
+                    conn.send({ keys: keys });
+                }
+            }
+
+            // --- 描画処理 ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // ステージ描画
+            ctx.fillStyle = '#2a2e3d';
+            ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, STAGE.height);
+            ctx.fillStyle = '#ff0055';
+            ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, 4); // 上部の装飾ライン
+
+            // プレイヤー描画
+            p1.draw();
+            p2.draw();
+
+            // HUD更新
+            document.getElementById('p1-damage').innerText = `${Math.floor(p1.damage)}%`;
+            document.getElementById('p2-damage').innerText = `${Math.floor(p2.damage)}%`;
+
+            requestAnimationFrame(gameLoop);
+        }
+    </script>
 </body>
 </html>
