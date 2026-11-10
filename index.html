@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>スマブラ風 2D Online Fighter</title>
+    <title>dance of dance (dod) ver0.0</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * {
@@ -18,12 +18,11 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #0d0e15;
+            background-color: #08090d;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: #fff;
         }
 
-        /* 横画面強制アナウンス */
         #portrait-warning {
             display: none;
             position: fixed;
@@ -50,17 +49,17 @@
         }
 
         canvas {
-            background: radial-gradient(circle at center, #1e2638 0%, #0d0e15 100%);
+            background: radial-gradient(circle at center, #151a28 0%, #08090d 100%);
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
 
-        /* ロビー・メニューUI */
+        /* オーバーレイUI */
         .overlay {
             position: absolute;
             inset: 0;
-            background: rgba(10, 12, 20, 0.85);
+            background: rgba(8, 9, 13, 0.88);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -69,20 +68,27 @@
             backdrop-filter: blur(8px);
         }
         .panel {
-            background: rgba(255, 255, 255, 0.07);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 16px;
             padding: 24px;
             width: 90%;
             max-width: 400px;
             text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
         }
         h1 {
-            font-size: 24px;
-            margin-bottom: 16px;
+            font-size: 26px;
+            margin-bottom: 4px;
             color: #ff3366;
-            text-shadow: 0 0 10px rgba(255,51,102,0.5);
+            text-shadow: 0 0 12px rgba(255,51,102,0.6);
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        .ver-tag {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 16px;
         }
         .btn {
             width: 100%;
@@ -113,7 +119,7 @@
             letter-spacing: 4px;
         }
 
-        /* ゲーム内HUD */
+        /* HUD */
         #hud {
             position: absolute;
             top: 10px;
@@ -125,17 +131,31 @@
             z-index: 5;
         }
         .player-card {
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.65);
             padding: 8px 16px;
             border-radius: 12px;
             border: 2px solid #555;
             text-align: center;
-            min-width: 130px;
+            min-width: 140px;
         }
         .player-card.p1 { border-color: #ff4444; }
         .player-card.p2 { border-color: #4488ff; }
         .p-name { font-size: 12px; font-weight: bold; }
         .p-damage { font-size: 28px; font-weight: 900; }
+        .shield-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .shield-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: #00ffff;
+            transition: width 0.1s linear;
+        }
 
         /* タッチコントローラー */
         #touch-controls {
@@ -153,7 +173,6 @@
             height: 180px;
             pointer-events: auto;
         }
-        /* 左操作 (D-Pad) */
         .dpad-btn {
             position: absolute;
             background: rgba(255, 255, 255, 0.15);
@@ -165,11 +184,10 @@
         #btn-right { right: 0; top: 60px; width: 60px; height: 60px; }
         #btn-down { left: 60px; bottom: 0; width: 60px; height: 60px; }
 
-        /* 右操作 (Action Buttons) */
         .act-btn {
             position: absolute;
-            width: 55px;
-            height: 55px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
             border: 2px solid rgba(255, 255, 255, 0.4);
@@ -180,12 +198,13 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            touch-action: none;
         }
-        .act-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.5); }
+        .act-btn:active { transform: scale(0.92); }
         #btn-atk { right: 70px; bottom: 10px; background: rgba(255, 50, 50, 0.4); }
-        #btn-spec { right: 10px; bottom: 70px; background: rgba(255, 170, 0, 0.4); }
+        #btn-spec { right: 10px; bottom: 75px; background: rgba(255, 170, 0, 0.4); }
         #btn-jump { right: 130px; bottom: 50px; background: rgba(50, 255, 50, 0.4); }
-        #btn-shield { right: 60px; bottom: 120px; background: rgba(50, 150, 255, 0.4); }
+        #btn-shield { right: 65px; bottom: 125px; background: rgba(50, 150, 255, 0.4); }
 
         #status-msg {
             margin-top: 10px;
@@ -198,28 +217,29 @@
 
     <div id="portrait-warning">
         <h2>画面を横向きにしてください</h2>
-        <p style="margin-top: 10px; color: #aaa;">このゲームは横画面専用です。</p>
+        <p style="margin-top: 10px; color: #aaa;">dance of dance (dod) は横画面専用です。</p>
     </div>
 
     <div id="game-container">
         <canvas id="canvas" width="960" height="540"></canvas>
 
-        <!-- HUD -->
         <div id="hud">
             <div class="player-card p1">
                 <div class="p-name" style="color:#ff4444;">1P (HOST)</div>
                 <div class="p-damage" id="p1-damage">0%</div>
+                <div class="shield-bar-bg"><div class="shield-bar-fill" id="p1-shield-bar"></div></div>
             </div>
             <div class="player-card p2">
                 <div class="p-name" style="color:#4488ff;">2P (GUEST)</div>
                 <div class="p-damage" id="p2-damage">0%</div>
+                <div class="shield-bar-bg"><div class="shield-bar-fill" id="p2-shield-bar"></div></div>
             </div>
         </div>
 
-        <!-- ロビーUI -->
         <div id="lobby" class="overlay">
             <div class="panel">
-                <h1>SMASH 2D ONLINE</h1>
+                <h1>dance of dance</h1>
+                <div class="ver-tag">dod ver0.0</div>
                 <button class="btn btn-green" id="btn-create">部屋を作る (HOST)</button>
                 <div style="margin: 15px 0; border-top: 1px solid #444;"></div>
                 <input type="number" id="room-input" placeholder="3桁の部屋番号" maxlength="3" pattern="\d*">
@@ -228,7 +248,6 @@
             </div>
         </div>
 
-        <!-- タッチパネルUI -->
         <div id="touch-controls">
             <div class="touch-group">
                 <div class="dpad-btn" id="btn-left"></div>
@@ -245,34 +264,136 @@
     </div>
 
     <script>
+        // --- Web Audio API 効果音合成 ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'jump') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.12);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'hit') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'heavy_hit') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.25);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'shield') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'break') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.35);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'projectile') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'ko') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.5);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+        }
+
         // --- 基本設定 & キャンバス ---
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const STAGE = { x: 180, y: 340, width: 600, height: 20 };
 
-        // 状態定義
-        let peer = null;
-        let conn = null;
-        let isHost = false;
-        let myPlayerId = 1;
-        let gameRunning = false;
+        let peer = null, conn = null;
+        let isHost = false, myPlayerId = 1, gameRunning = false;
 
-        // キー入力状態
-        const keys = { left: false, right: false, down: false, jump: false, attack: false, special: false, shield: false };
+        const keys = { 
+            left: false, right: false, down: false, jump: false, shield: false,
+            atkDir: null, specDir: null // N, U, D, L
+        };
 
-        // 物理パラメータ
         const GRAVITY = 0.45;
         const FRICTION = 0.85;
+
+        // 弾丸クラス
+        class Projectile {
+            constructor(x, y, vx, ownerId) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.ownerId = ownerId;
+                this.radius = 12;
+                this.active = true;
+                this.life = 60;
+            }
+            update() {
+                this.x += this.vx;
+                this.life--;
+                if (this.life <= 0 || this.x < 0 || this.x > canvas.width) this.active = false;
+            }
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.ownerId === 1 ? '#ff8844' : '#44ccff';
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        let projectiles = [];
 
         class Player {
             constructor(id, x, color) {
                 this.id = id;
                 this.spawnX = x;
                 this.spawnY = 200;
-                this.reset();
                 this.color = color;
-                this.width = 32;
-                this.height = 48;
+                this.width = 36;
+                this.height = 54;
+                this.reset();
             }
 
             reset() {
@@ -285,39 +406,65 @@
                 this.isGrounded = false;
                 this.shield = false;
                 this.shieldHP = 100;
+                this.isShieldBroken = false;
+                this.dizzyTimer = 0;
                 this.attackTimer = 0;
+                this.currentMotion = 'idle'; // idle, jab, smash, somersault, lowkick, fireball, dashpunch, rising, slam, hit, dizzy
                 this.hitbox = null;
-                this.state = 'idle'; // idle, attack, special, hit
                 this.hitStun = 0;
                 this.jumpsLeft = 2;
             }
 
             update() {
-                if (this.hitStun > 0) {
-                    this.hitStun--;
+                // ガードクラッシュ気絶処理
+                if (this.isShieldBroken) {
+                    this.dizzyTimer--;
+                    this.currentMotion = 'dizzy';
+                    this.shield = false;
+                    if (this.dizzyTimer <= 0) {
+                        this.isShieldBroken = false;
+                        this.shieldHP = 50; // 復帰時半分回復
+                    }
                 } else {
-                    // シールド展開
+                    // シールド管理
                     if (this.shield && this.isGrounded) {
                         this.vx *= 0.5;
+                        this.shieldHP -= 0.6; // 一定時間で減少
+                        if (this.shieldHP <= 0) {
+                            this.shieldHP = 0;
+                            this.isShieldBroken = true;
+                            this.dizzyTimer = 180; // 3秒間気絶
+                            this.shield = false;
+                            this.hitbox = null;
+                            playSound('break');
+                        }
+                    } else if (this.shieldHP < 100) {
+                        this.shieldHP += 0.25; // 自然回復
                     }
+                }
 
-                    // 攻撃判定持続カウントダウン
+                // 被弾硬直
+                if (this.hitStun > 0) {
+                    this.hitStun--;
+                    this.currentMotion = 'hit';
+                } else if (!this.isShieldBroken) {
                     if (this.attackTimer > 0) {
                         this.attackTimer--;
                         if (this.attackTimer === 0) {
                             this.hitbox = null;
-                            this.state = 'idle';
+                            this.currentMotion = 'idle';
                         }
+                    } else if (Math.abs(this.vx) < 0.2 && this.isGrounded) {
+                        this.currentMotion = 'idle';
                     }
                 }
 
-                // 重力 & 移動
                 this.vy += GRAVITY;
                 this.vx *= FRICTION;
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // ステージ接地判定
+                // 接地判定
                 this.isGrounded = false;
                 if (this.x + this.width > STAGE.x && this.x < STAGE.x + STAGE.width) {
                     if (this.y + this.height >= STAGE.y && this.y + this.height <= STAGE.y + STAGE.height && this.vy >= 0) {
@@ -328,116 +475,220 @@
                     }
                 }
 
-                // 画面外撃墜 (バースト) 判定
-                if (this.x < -100 || this.x > canvas.width + 100 || this.y < -100 || this.y > canvas.height + 100) {
+                // 画面外バースト
+                if (this.x < -120 || this.x > canvas.width + 120 || this.y < -120 || this.y > canvas.height + 120) {
+                    playSound('ko');
                     this.reset();
                 }
             }
 
             jump() {
-                if (this.hitStun > 0 || this.shield) return;
+                if (this.hitStun > 0 || this.shield || this.isShieldBroken) return;
                 if (this.jumpsLeft > 0) {
                     this.vy = -10.5;
                     this.jumpsLeft--;
                     this.isGrounded = false;
+                    playSound('jump');
                 }
             }
 
             move(dir) {
-                if (this.hitStun > 0 || this.shield) return;
+                if (this.hitStun > 0 || this.shield || this.isShieldBroken) return;
                 this.vx += dir * 0.9;
                 this.facing = dir > 0 ? 1 : -1;
             }
 
             fastFall() {
-                if (!this.isGrounded && this.vy > 0) {
-                    this.vy += 2.0;
+                if (!this.isGrounded && this.vy > 0) this.vy += 2.0;
+            }
+
+            // --- 4方向 通常攻撃 (A) ---
+            executeAttack(dir) {
+                if (this.hitStun > 0 || this.attackTimer > 0 || this.shield || this.isShieldBroken) return;
+                
+                if (dir === 'N') { // Tap: ジャブ
+                    this.currentMotion = 'jab';
+                    this.attackTimer = 10;
+                    this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 24, y: this.y + 15, w: 24, h: 20, damage: 5, baseKnockback: 4, scaling: 0.08, dir: this.facing };
+                    playSound('hit');
+                } else if (dir === 'L') { // 横フリック: スマッシュ
+                    this.currentMotion = 'smash';
+                    this.attackTimer = 18;
+                    this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 38, y: this.y + 10, w: 38, h: 28, damage: 14, baseKnockback: 9, scaling: 0.18, dir: this.facing };
+                    playSound('heavy_hit');
+                } else if (dir === 'U') { // 上フリック: サマーソルト
+                    this.currentMotion = 'somersault';
+                    this.attackTimer = 16;
+                    this.vy = -4;
+                    this.hitbox = { x: this.x - 5, y: this.y - 25, w: this.width + 10, h: 30, damage: 11, baseKnockback: 8, scaling: 0.15, dir: this.facing, vy: -8 };
+                    playSound('heavy_hit');
+                } else if (dir === 'D') { // 下フリック: ローキック
+                    this.currentMotion = 'lowkick';
+                    this.attackTimer = 12;
+                    this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 30, y: this.y + 35, w: 30, h: 18, damage: 8, baseKnockback: 5, scaling: 0.1, dir: this.facing };
+                    playSound('hit');
                 }
             }
 
-            attack() {
-                if (this.hitStun > 0 || this.attackTimer > 0 || this.shield) return;
-                this.state = 'attack';
-                this.attackTimer = 12;
-                this.hitbox = {
-                    x: this.facing === 1 ? this.x + this.width : this.x - 30,
-                    y: this.y + 10,
-                    w: 30,
-                    h: 25,
-                    damage: 8,
-                    baseKnockback: 6,
-                    scaling: 0.12,
-                    dir: this.facing
-                };
-            }
+            // --- 4方向 スペシャル攻撃 (B) ---
+            executeSpecial(dir) {
+                if (this.hitStun > 0 || this.attackTimer > 0 || this.shield || this.isShieldBroken) return;
 
-            special() {
-                if (this.hitStun > 0 || this.attackTimer > 0 || this.shield) return;
-                // 上スペシャル（復帰技）
-                this.state = 'special';
-                this.vy = -12;
-                this.vx = this.facing * 4;
-                this.attackTimer = 20;
-                this.hitbox = {
-                    x: this.x - 10,
-                    y: this.y - 10,
-                    w: this.width + 20,
-                    h: this.height + 10,
-                    damage: 12,
-                    baseKnockback: 9,
-                    scaling: 0.15,
-                    dir: this.facing
-                };
+                if (dir === 'N') { // Tap: 気功波
+                    this.currentMotion = 'fireball';
+                    this.attackTimer = 18;
+                    const spawnX = this.facing === 1 ? this.x + this.width + 10 : this.x - 10;
+                    projectiles.push(new Projectile(spawnX, this.y + 20, this.facing * 8, this.id));
+                    playSound('projectile');
+                } else if (dir === 'L') { // 横フリック: 突進パンチ
+                    this.currentMotion = 'dashpunch';
+                    this.attackTimer = 20;
+                    this.vx = this.facing * 9;
+                    this.hitbox = { x: this.facing === 1 ? this.x + this.width : this.x - 35, y: this.y + 5, w: 35, h: 35, damage: 13, baseKnockback: 8, scaling: 0.16, dir: this.facing };
+                    playSound('heavy_hit');
+                } else if (dir === 'U') { // 上フリック: ライジングドラゴン (復帰技)
+                    this.currentMotion = 'rising';
+                    this.attackTimer = 22;
+                    this.vy = -12.5;
+                    this.vx = this.facing * 3.5;
+                    this.hitbox = { x: this.x - 10, y: this.y - 15, w: this.width + 20, h: 30, damage: 12, baseKnockback: 9, scaling: 0.15, dir: this.facing, vy: -6 };
+                    playSound('heavy_hit');
+                } else if (dir === 'D') { // 下フリック: 衝撃波 slam
+                    this.currentMotion = 'slam';
+                    this.attackTimer = 20;
+                    if (!this.isGrounded) this.vy = 12; // 急降下
+                    this.hitbox = { x: this.x - 20, y: this.y + 20, w: this.width + 40, h: 30, damage: 10, baseKnockback: 7, scaling: 0.12, dir: this.facing };
+                    playSound('heavy_hit');
+                }
             }
 
             applyHit(hitbox) {
-                if (this.shield && this.isGrounded) {
-                    // シールドガード成功
+                if (this.shield && this.isGrounded && !this.isShieldBroken) {
+                    this.shieldHP -= hitbox.damage * 2.5; // ガード削り
                     this.vx = hitbox.dir * 3;
+                    playSound('shield');
+                    if (this.shieldHP <= 0) {
+                        this.shieldHP = 0;
+                        this.isShieldBroken = true;
+                        this.dizzyTimer = 180;
+                        this.shield = false;
+                        playSound('break');
+                    }
                     return;
                 }
                 this.damage += hitbox.damage;
                 const totalKnockback = hitbox.baseKnockback + (this.damage * hitbox.scaling);
                 this.vx = hitbox.dir * totalKnockback;
-                this.vy = -totalKnockback * 0.6;
-                this.hitStun = Math.floor(totalKnockback * 1.5);
-                this.state = 'hit';
+                this.vy = hitbox.vy ? hitbox.vy : -totalKnockback * 0.55;
+                this.hitStun = Math.floor(totalKnockback * 1.4);
+                this.currentMotion = 'hit';
             }
 
             draw() {
                 ctx.save();
-                // プレイヤー本体
-                ctx.fillStyle = this.hitStun > 0 ? '#ffffff' : this.color;
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                if (this.facing === -1) ctx.scale(-1, 1);
 
-                // 向きインジケータ（目線）
-                ctx.fillStyle = '#000';
-                const eyeX = this.facing === 1 ? this.x + 20 : this.x + 4;
-                ctx.fillRect(eyeX, this.y + 8, 8, 8);
+                const c = this.hitStun > 0 ? '#ffffff' : this.color;
+                ctx.strokeStyle = c;
+                ctx.fillStyle = c;
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
 
-                // シールド描写
-                if (this.shield && this.isGrounded) {
+                // --- ポーズアニメーション描画 (棒人間) ---
+                const centerX = 0, centerY = -5;
+                
+                // 頭部
+                ctx.beginPath();
+                ctx.arc(centerX, centerY - 18, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 胴体
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY - 10);
+                ctx.lineTo(centerX, centerY + 10);
+                ctx.stroke();
+
+                // 手足座標の設定
+                let lh = {x: -10, y: 5}, rh = {x: 10, y: 5};
+                let lf = {x: -8, y: 25}, rf = {x: 8, y: 25};
+
+                if (this.currentMotion === 'jab') {
+                    rh = {x: 22, y: -6};
+                } else if (this.currentMotion === 'smash') {
+                    rh = {x: 28, y: -4};
+                    lh = {x: -12, y: -2};
+                } else if (this.currentMotion === 'somersault') {
+                    rf = {x: 15, y: -18};
+                } else if (this.currentMotion === 'lowkick') {
+                    rf = {x: 24, y: 20};
+                } else if (this.currentMotion === 'fireball') {
+                    lh = {x: 20, y: -5}; rh = {x: 20, y: 0};
+                } else if (this.currentMotion === 'dashpunch') {
+                    rh = {x: 26, y: -8}; lf = {x: -14, y: 22};
+                } else if (this.currentMotion === 'rising') {
+                    rh = {x: 5, y: -28}; rf = {x: 5, y: 20};
+                } else if (this.currentMotion === 'dizzy') {
+                    lh = {x: -12, y: 10}; rh = {x: 12, y: 10};
+                }
+
+                // 腕描画
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY - 8); ctx.lineTo(lh.x, lh.y);
+                ctx.moveTo(centerX, centerY - 8); ctx.lineTo(rh.x, rh.y);
+                ctx.stroke();
+
+                // 脚描画
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY + 10); ctx.lineTo(lf.x, lf.y);
+                ctx.moveTo(centerX, centerY + 10); ctx.lineTo(rf.x, rf.y);
+                ctx.stroke();
+
+                ctx.restore();
+
+                // --- 気絶ピヨり演出 (星) ---
+                if (this.isShieldBroken) {
+                    ctx.save();
+                    const angle = Date.now() * 0.01;
+                    ctx.fillStyle = '#ffff00';
+                    for (let i = 0; i < 3; i++) {
+                        const a = angle + (i * Math.PI * 2 / 3);
+                        const sx = this.x + this.width / 2 + Math.cos(a) * 18;
+                        const sy = this.y - 12 + Math.sin(a) * 6;
+                        ctx.beginPath();
+                        ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+
+                // --- シールド描写 ---
+                if (this.shield && this.isGrounded && !this.isShieldBroken) {
+                    ctx.save();
+                    const radius = 22 + (this.shieldHP * 0.15);
                     ctx.beginPath();
-                    ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 35, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(100, 200, 255, 0.4)';
+                    ctx.arc(this.x + this.width / 2, this.y + this.height / 2, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, 225, 255, ${0.2 + (this.shieldHP / 200)})`;
                     ctx.fill();
                     ctx.strokeStyle = '#00ffff';
                     ctx.stroke();
+                    ctx.restore();
                 }
 
-                // 攻撃判定（Hitbox）表示
+                // --- ヒットボックスデバッグ表示 ---
                 if (this.hitbox) {
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
                     ctx.fillRect(this.hitbox.x, this.hitbox.y, this.hitbox.w, this.hitbox.h);
+                    ctx.restore();
                 }
-                ctx.restore();
             }
         }
 
         const p1 = new Player(1, 280, '#ff4444');
         const p2 = new Player(2, 640, '#4488ff');
 
-        // --- ネットワーク (PeerJS) ---
+        // --- PeerJS オンライン通信 ---
         const statusMsg = document.getElementById('status-msg');
 
         function generate3DigitCode() {
@@ -445,8 +696,9 @@
         }
 
         document.getElementById('btn-create').addEventListener('click', () => {
+            initAudio();
             const roomCode = generate3DigitCode();
-            const peerId = 'smash2d-room-' + roomCode;
+            const peerId = 'dod-room-' + roomCode;
 
             statusMsg.innerText = '部屋を作成中...';
             peer = new Peer(peerId);
@@ -462,19 +714,20 @@
                 setupConnection();
             });
 
-            peer.on('error', (err) => {
-                statusMsg.innerText = 'エラー: この部屋番号は既に使われている可能性があります';
+            peer.on('error', () => {
+                statusMsg.innerText = 'エラー: 部屋作成に失敗しました';
             });
         });
 
         document.getElementById('btn-join').addEventListener('click', () => {
+            initAudio();
             const roomCode = document.getElementById('room-input').value;
             if (roomCode.length !== 3) {
                 alert('3桁の部屋番号を入力してください');
                 return;
             }
 
-            const peerId = 'smash2d-room-' + roomCode;
+            const peerId = 'dod-room-' + roomCode;
             statusMsg.innerText = '部屋に接続中...';
             peer = new Peer();
 
@@ -485,7 +738,7 @@
                 setupConnection();
             });
 
-            peer.on('error', (err) => {
+            peer.on('error', () => {
                 statusMsg.innerText = '接続エラー: 部屋が見つかりません';
             });
         });
@@ -498,19 +751,23 @@
             });
 
             conn.on('data', (data) => {
-                // 対戦相手からの入力・同期データの受信
                 if (isHost) {
-                    // ホスト側はゲストの入力のみ受信
                     applyInput(p2, data.keys);
                 } else {
-                    // ゲスト側はホストから送信されるゲーム全体の物理結果を同調
-                    p1.x = data.p1.x; p1.y = data.p1.y;
-                    p1.facing = data.p1.facing; p1.damage = data.p1.damage;
-                    p1.shield = data.p1.shield; p1.hitbox = data.p1.hitbox;
+                    p1.x = data.p1.x; p1.y = data.p1.y; p1.facing = data.p1.facing;
+                    p1.damage = data.p1.damage; p1.shield = data.p1.shield; p1.shieldHP = data.p1.shieldHP;
+                    p1.isShieldBroken = data.p1.isShieldBroken; p1.currentMotion = data.p1.currentMotion; p1.hitbox = data.p1.hitbox;
 
-                    p2.x = data.p2.x; p2.y = data.p2.y;
-                    p2.facing = data.p2.facing; p2.damage = data.p2.damage;
-                    p2.shield = data.p2.shield; p2.hitbox = data.p2.hitbox;
+                    p2.x = data.p2.x; p2.y = data.p2.y; p2.facing = data.p2.facing;
+                    p2.damage = data.p2.damage; p2.shield = data.p2.shield; p2.shieldHP = data.p2.shieldHP;
+                    p2.isShieldBroken = data.p2.isShieldBroken; p2.currentMotion = data.p2.currentMotion; p2.hitbox = data.p2.hitbox;
+
+                    // 弾丸同期
+                    projectiles = data.projectiles.map(p => {
+                        let proj = new Projectile(p.x, p.y, p.vx, p.ownerId);
+                        proj.radius = p.radius;
+                        return proj;
+                    });
                 }
             });
         }
@@ -520,36 +777,42 @@
             if (inputKeys.right) player.move(1);
             if (inputKeys.down) player.fastFall();
             if (inputKeys.jumpTrigger) player.jump();
-            if (inputKeys.attackTrigger) player.attack();
-            if (inputKeys.specialTrigger) player.special();
+            if (inputKeys.atkDir) player.executeAttack(inputKeys.atkDir);
+            if (inputKeys.specDir) player.executeSpecial(inputKeys.specDir);
             player.shield = inputKeys.shield;
         }
 
-        // --- 入力ハンドリング ---
-        let jumpPressed = false, attackPressed = false, specialPressed = false;
+        // --- フリック・キーボード操作判定 ---
+        let jumpPressed = false;
 
         function checkTriggers() {
-            // トリガー入力（押しっぱなし防止用）
             keys.jumpTrigger = keys.jump && !jumpPressed;
             jumpPressed = keys.jump;
-
-            keys.attackTrigger = keys.attack && !attackPressed;
-            attackPressed = keys.attack;
-
-            keys.specialTrigger = keys.special && !specialPressed;
-            specialPressed = keys.special;
         }
 
         // キーボード操作
         window.addEventListener('keydown', (e) => {
+            initAudio();
             if (e.repeat) return;
             if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
             if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
             if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
             if (e.key === 'w' || e.key === 'ArrowUp' || e.key === ' ') keys.jump = true;
-            if (e.key === 'j' || e.key === 'z') keys.attack = true;
-            if (e.key === 'k' || e.key === 'x') keys.special = true;
             if (e.key === 'l' || e.key === 'c') keys.shield = true;
+
+            // キーボード技分岐 (WASD/矢印+ J/K)
+            if (e.key === 'j' || e.key === 'z') {
+                if (keys.left || keys.right) keys.atkDir = 'L';
+                else if (keys.jump) keys.atkDir = 'U';
+                else if (keys.down) keys.atkDir = 'D';
+                else keys.atkDir = 'N';
+            }
+            if (e.key === 'k' || e.key === 'x') {
+                if (keys.left || keys.right) keys.specDir = 'L';
+                else if (keys.jump) keys.specDir = 'U';
+                else if (keys.down) keys.specDir = 'D';
+                else keys.specDir = 'N';
+            }
         });
 
         window.addEventListener('keyup', (e) => {
@@ -557,42 +820,80 @@
             if (e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
             if (e.key === 's' || e.key === 'ArrowDown') keys.down = false;
             if (e.key === 'w' || e.key === 'ArrowUp' || e.key === ' ') keys.jump = false;
-            if (e.key === 'j' || e.key === 'z') keys.attack = false;
-            if (e.key === 'k' || e.key === 'x') keys.special = false;
             if (e.key === 'l' || e.key === 'c') keys.shield = false;
         });
 
-        // スマホ タッチ操作の設定
+        // ボタンのフリック判定セットアップ
+        function setupFlickBtn(elementId, actionType) {
+            const btn = document.getElementById(elementId);
+            let startX = 0, startY = 0;
+
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                initAudio();
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+            });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                const dx = touch.clientX - startX;
+                const dy = touch.clientY - startY;
+                const dist = Math.hypot(dx, dy);
+
+                let dir = 'N';
+                if (dist > 20) { // 20px以上移動でフリック認定
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        dir = 'L'; // 左右フリック
+                    } else {
+                        dir = dy < 0 ? 'U' : 'D'; // 上・下フリック
+                    }
+                }
+
+                if (actionType === 'atk') keys.atkDir = dir;
+                if (actionType === 'spec') keys.specDir = dir;
+            });
+        }
+
+        setupFlickBtn('btn-atk', 'atk');
+        setupFlickBtn('btn-spec', 'spec');
+
         function bindTouch(elementId, keyName) {
             const btn = document.getElementById(elementId);
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); keys[keyName] = true; });
             btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
         }
         bindTouch('btn-left', 'left');
         bindTouch('btn-right', 'right');
         bindTouch('btn-down', 'down');
         bindTouch('btn-jump', 'jump');
-        bindTouch('btn-atk', 'attack');
-        bindTouch('btn-spec', 'special');
         bindTouch('btn-shield', 'shield');
 
-
-        // --- ゲームループ & 衝突判定 ---
+        // --- 当たり判定 ---
         function checkHitboxes() {
-            // P1 -> P2
-            if (p1.hitbox) {
-                if (isColliding(p1.hitbox, p2)) {
-                    p2.applyHit(p1.hitbox);
-                    p1.hitbox = null; // 1度ヒットしたら判定消失
-                }
+            // 近接攻撃 P1 -> P2
+            if (p1.hitbox && isColliding(p1.hitbox, p2)) {
+                p2.applyHit(p1.hitbox);
+                p1.hitbox = null;
             }
-            // P2 -> P1
-            if (p2.hitbox) {
-                if (isColliding(p2.hitbox, p1)) {
-                    p1.applyHit(p2.hitbox);
-                    p2.hitbox = null;
-                }
+            // 近接攻撃 P2 -> P1
+            if (p2.hitbox && isColliding(p2.hitbox, p1)) {
+                p1.applyHit(p2.hitbox);
+                p2.hitbox = null;
             }
+
+            // 弾丸の当たり判定
+            projectiles.forEach(p => {
+                if (!p.active) return;
+                const target = p.ownerId === 1 ? p2 : p1;
+                const rect = { x: p.x - p.radius, y: p.y - p.radius, w: p.radius * 2, h: p.radius * 2 };
+                if (isColliding(rect, target)) {
+                    target.applyHit({ damage: 7, baseKnockback: 5, scaling: 0.1, dir: p.vx > 0 ? 1 : -1 });
+                    p.active = false;
+                }
+            });
         }
 
         function isColliding(rect, player) {
@@ -602,48 +903,63 @@
                    rect.y + rect.h > player.y;
         }
 
+        // --- ループ ---
         function gameLoop() {
             if (!gameRunning) return;
 
             checkTriggers();
 
             if (isHost) {
-                // ホストがゲーム全体を演算処理
-                applyInput(p1, keys);
+                const activePlayer = myPlayerId === 1 ? p1 : p2;
+                applyInput(p1, myPlayerId === 1 ? keys : keys); // ホスト入力適応
+                
                 p1.update();
                 p2.update();
+
+                // 弾丸更新
+                projectiles.forEach(p => p.update());
+                projectiles = projectiles.filter(p => p.active);
+
                 checkHitboxes();
 
-                // ゲストへ最新状態を送信
+                // 入力フラグのリセット
+                keys.atkDir = null;
+                keys.specDir = null;
+
                 if (conn && conn.open) {
                     conn.send({
-                        p1: { x: p1.x, y: p1.y, facing: p1.facing, damage: p1.damage, shield: p1.shield, hitbox: p1.hitbox },
-                        p2: { x: p2.x, y: p2.y, facing: p2.facing, damage: p2.damage, shield: p2.shield, hitbox: p2.hitbox }
+                        p1: { x: p1.x, y: p1.y, facing: p1.facing, damage: p1.damage, shield: p1.shield, shieldHP: p1.shieldHP, isShieldBroken: p1.isShieldBroken, currentMotion: p1.currentMotion, hitbox: p1.hitbox },
+                        p2: { x: p2.x, y: p2.y, facing: p2.facing, damage: p2.damage, shield: p2.shield, shieldHP: p2.shieldHP, isShieldBroken: p2.isShieldBroken, currentMotion: p2.currentMotion, hitbox: p2.hitbox },
+                        projectiles: projectiles.map(p => ({ x: p.x, y: p.y, vx: p.vx, radius: p.radius, ownerId: p.ownerId }))
                     });
                 }
             } else {
-                // ゲストは自身の入力キー情報のみホストへ送信
                 if (conn && conn.open) {
                     conn.send({ keys: keys });
                 }
+                keys.atkDir = null;
+                keys.specDir = null;
             }
 
-            // --- 描画処理 ---
+            // 描画
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // ステージ描画
-            ctx.fillStyle = '#2a2e3d';
+            // ステージ
+            ctx.fillStyle = '#222735';
             ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, STAGE.height);
-            ctx.fillStyle = '#ff0055';
-            ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, 4); // 上部の装飾ライン
+            ctx.fillStyle = '#ff3366';
+            ctx.fillRect(STAGE.x, STAGE.y, STAGE.width, 4);
 
-            // プレイヤー描画
+            // キャラ & 弾丸描画
+            projectiles.forEach(p => p.draw());
             p1.draw();
             p2.draw();
 
             // HUD更新
             document.getElementById('p1-damage').innerText = `${Math.floor(p1.damage)}%`;
             document.getElementById('p2-damage').innerText = `${Math.floor(p2.damage)}%`;
+            document.getElementById('p1-shield-bar').style.width = `${p1.shieldHP}%`;
+            document.getElementById('p2-shield-bar').style.width = `${p2.shieldHP}%`;
 
             requestAnimationFrame(gameLoop);
         }
